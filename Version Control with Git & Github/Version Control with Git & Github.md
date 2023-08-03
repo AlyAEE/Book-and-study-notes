@@ -28,14 +28,14 @@
     the project to recover data or files.
 
 ![A diagram of a diagram Description automatically
-generated](.images/image1.png){width="3.8657130358705163in"
+generated](images/image1.png){width="3.8657130358705163in"
 height="2.798040244969379in"}
 
 ![A screenshot of a computer Description automatically
-generated](.images/image2.png){width="4.744008092738408in"
+generated](images/image2.png){width="4.744008092738408in"
 height="2.71797353455818in"}
 
-![](.images/image3.png){width="4.752213473315836in"
+![](images/image3.png){width="4.752213473315836in"
 height="3.0055446194225723in"}
 
 **Required Commands**
@@ -63,7 +63,7 @@ height="3.0055446194225723in"}
 **Create Course Directories**
 
 ![A screenshot of a computer Description automatically
-generated](.images/image4.png){width="6.808923884514436in"
+generated](images/image4.png){width="6.808923884514436in"
 height="1.5001301399825022in"}
 
 **Create A Repo From Scratch**
@@ -292,7 +292,7 @@ This command:
     -   **-p** (default) , but if -**-stat** is used, the patch won\'t
         display, so pass **-p** to add it again
 
-![](.images/image5.png){width="3.5006944444444446in"
+![](images/image5.png){width="3.5006944444444446in"
 height="1.854861111111111in"}**Staging Files**
 
 **Git add Command**
