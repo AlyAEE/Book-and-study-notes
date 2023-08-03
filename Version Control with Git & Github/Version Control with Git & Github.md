@@ -1,19 +1,12 @@
-**Version Control With Git**
+# **Version Control With Git**
 
--   **a Version Control** System is just software that helps you control
-    (or manage) the different versions\...of something (typically source
-    code).
+-   ### **a Version Control** System is just software that helps you control  (or manage) the different versions\...of something (typically source code). 
 
--   There are two different categories of **version Control systems**:
-    **Centralized** model and **Distributed** model
+-   ### There are two different categories of **version Control systems**: **Centralized** model and **Distributed** model
 
--   In a **centralized model**, there's one powerful central computer
-    that hosts the project, every interaction must go through this
-    central computer.
+-   ### In a **centralized model**, there's one powerful central computer that hosts the project, every interaction must go through this central computer.
 
--   In a **distributed model**, there's no central repository of
-    information, each developer has a complete copy of the project on
-    their computer.
+-   ### In a **distributed model**, there's no central repository of information, each developer has a complete copy of the project on their computer.
 
 -   **Git** is a distributed version control system
 
@@ -28,15 +21,16 @@
     the project to recover data or files.
 
 ![A diagram of a diagram Description automatically
-generated](images/image1.png){width="3.8657130358705163in"
-height="2.798040244969379in"}
+generated](images/image1.png)
+
 
 ![A screenshot of a computer Description automatically
-generated](images/image2.png){width="4.744008092738408in"
-height="2.71797353455818in"}
+generated](images/image2.png)
 
-![](images/image3.png){width="4.752213473315836in"
-height="3.0055446194225723in"}
+
+
+![](images/image3.png)
+
 
 **Required Commands**
 
