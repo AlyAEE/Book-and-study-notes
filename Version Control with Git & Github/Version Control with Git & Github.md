@@ -1,12 +1,19 @@
-# **Version Control With Git**
+**Version Control With Git**
 
--   ### **a Version Control** System is just software that helps you control  (or manage) the different versions\...of something (typically source code). 
+-   **a Version Control** System is just software that helps you control
+    (or manage) the different versions\...of something (typically source
+    code).
 
--   ### There are two different categories of **version Control systems**: **Centralized** model and **Distributed** model
+-   There are two different categories of **version Control systems**:
+    **Centralized** model and **Distributed** model
 
--   ### In a **centralized model**, there's one powerful central computer that hosts the project, every interaction must go through this central computer.
+-   In a **centralized model**, there's one powerful central computer
+    that hosts the project, every interaction must go through this
+    central computer.
 
--   ### In a **distributed model**, there's no central repository of information, each developer has a complete copy of the project on their computer.
+-   In a **distributed model**, there's no central repository of
+    information, each developer has a complete copy of the project on
+    their computer.
 
 -   **Git** is a distributed version control system
 
@@ -23,14 +30,31 @@
 ![A diagram of a diagram Description automatically
 generated](images/image1.png)
 
-
 ![A screenshot of a computer Description automatically
 generated](images/image2.png)
 
+-   **\$ git config --global \--unset user.name**
 
+    -   to unset a configuration
+
+-   **\$git config --global \--edit**
+
+    -   to open configuration file in your editor
+
+-   **\$ git config \--global init.defaultBranch \<name\>**
+
+    -   To configure the initial branch name to use in all of your new
+        repositories
+
+-   **\$ git config --global alias.''alias-name"
+    "Command-to-be-aliased"**
+
+    -   Make and alias for an existing command ex: git config --global
+        alias.cm "commit -m"
+
+    -   Search web for git alias list to get some predefined aliases
 
 ![](images/image3.png)
-
 
 **Required Commands**
 
@@ -57,8 +81,7 @@ generated](images/image2.png)
 **Create Course Directories**
 
 ![A screenshot of a computer Description automatically
-generated](images/image4.png){width="6.808923884514436in"
-height="1.5001301399825022in"}
+generated](images/image4.png)
 
 **Create A Repo From Scratch**
 
@@ -164,6 +187,9 @@ This command:
     This will help you learn how **Git** works and it\'ll help you from
     making (possibly) incorrect assumptions about the state of your
     files/repository.
+
+-   **\$ git restore \<file\>\...** to discard changes in working
+    directory
 
 -   **\$ git restore \--staged \<file\>\...\"** to unstage file from
     staging index
@@ -286,8 +312,8 @@ This command:
     -   **-p** (default) , but if -**-stat** is used, the patch won\'t
         display, so pass **-p** to add it again
 
-![](images/image5.png){width="3.5006944444444446in"
-height="1.854861111111111in"}**Staging Files**
+![](images/image5.png)
+**Staging Files**
 
 **Git add Command**
 
@@ -494,9 +520,54 @@ height="1.854861111111111in"}**Staging Files**
 
         -   a/b/c/z
 
+**Git Stach**
+
+-   **\$ git stash**
+
+    -   Stash working directory and staging index
+
+-   **\$ git stash save "message"**
+
+    -   Add message when you stash
+
+-   **\$ git stash pop**
+
+    -   Pop the last stashed files to the working directory or staging
+        index and delete it from the stash
+
+-   **\$ git stash pop stash@{'id'}**
+
+    -   Pop a specific stash
+
+-   **\$ git stash list**
+
+    -   List of current Stashes
+
+-   **\$ git stash apply**
+
+    -   Pop the last stashed files to the working directory or staging
+        index but doesn't delete it from the stash
+
+-   **\$ git stash drop**
+
+    -   Delete the last stashed files
+
+-   **\$ git stash show**
+
+    -   Returns what's inside the last stashed files
+
+-   **\$ git stash clear**
+
+    -   Delete all the stashed files
+
+-   **\$ git stash branch \<branch-name\>**
+
+    -   create a branch from the latest stash and apply its changes to
+        it.
+
 **Tagging**
 
--   **\$ git Tag -a** v1.0
+-   **\$ git Tag -a** v1.0 **-m "message"**
 
 -   the **git tag** command is used to add a marker on a specific
     commit. The tag does not move around as new commits are added.
@@ -548,6 +619,9 @@ height="1.854861111111111in"}**Staging Files**
 -   **\$ git branch** **"name'' "sha" :** create a branch and have it
     point to the commit with **SHA**
 
+-   **\$ git branch -m "NewNameBranch"** : rename the just created
+    branch
+
 **Git checkout**
 
 -   **\$git checkout "branch-name"**
@@ -563,15 +637,27 @@ height="1.854861111111111in"}**Staging Files**
     -   go into the repository and pull out all of the files and
         directories of the commit that the branch points to
 
--   **\$ git checkout -b "footer" "master"** : create a new footer
-    branch and have this footer branch start at the same location as the
-    master branch
+-   **\$ git checkout -b "footer" "master"**
 
--   **\$ git checkout \-- ''file name" :** remove the uncommitted
-    changes from the working directory
+    -   create a new footer branch and have this footer branch start at
+        the same location as the master branch, switch to this branch.
 
--   **git restore \--staged \<file\>\...\"** : to Remove file from
-    staging index
+-   **\$ git checkout \-- ''file name"**
+
+    -   remove the edits you did in the working directory on this file
+        if it is in staging index or committed
+
+-   **\$ git restore \--staged \<file\>\...\"**
+
+    -   to Remove file from staging index
+
+-   **\$ git clean -n**
+
+    -   List of files you can delete in the working directory
+
+-   **\$ git clean -p**
+
+    -   Delete the files from the working directory
 
 **Merging**
 
@@ -634,3 +720,69 @@ height="1.854861111111111in"}**Staging Files**
     of the file, so make sure you check the entire file for merge
     conflict indicators - a **quick search** for **\<\<\<** should help
     you locate all of them.
+
+**Dealing with Remote repository**
+
+-   **\$ git push "RemoteRepoName" "branch"**
+
+    -   This command pushes your commits to the remote repository
+
+-   **\$ git push "RemoteRepoName" "branch" \--force**
+
+    -   This command pushes your commits to the remote repository by
+        force
+
+-   **\$ git remote -v**
+
+    -   This command return the link to the origin Remote Repository to
+        Fetch and Pull
+
+-   **\$ git pull "RemoteRepoName"**
+
+    -   This commands pulls your remote repository to the local
+        repository; it does two commands Fetch and Merge
+
+**Generate and Test Github Public Key**
+
+-   **ssh \--keygen -t rsa -b 4096 -C "email"**
+
+    -   **\--keygen** key generator
+
+    -   **-t** type of algorithm, **rsa** one of the algorithms
+
+    -   **-b** no. of bits**, 4096**
+
+    -   This command generates public/private key
+
+-   **Cat \~/.ssh/id_rsa.pub**
+
+    -   Returns the content of public key file
+
+-   Ssh -T <git@github.com>
+
+    -   To authenticate your key on Github
+
+**Create a Repository and upload it to Github**
+
+-   **git init** =\> initialize the repository in the current file
+
+-   **git add README.md** =\> add the readme file to the staging index
+
+-   **git commit -m \"first commit\"** =\> commit the changes
+
+-   **git branch -M main** =\> rename the current branch to main
+
+-   **git remote add origin "link of ssh or https"** =\> link the
+    repository with remote repository
+
+-   **git push -u origin main** =\> Pull(-u) and push changes to the
+    remote repository
+
+**Pull Request**
+
+-   you can Fork an Existing Repository from Github
+
+-   add and commit your changes to this repository
+
+-   then submit a pull request, and wait for your commits to be merged
+    to the main repository
