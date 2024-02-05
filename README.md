@@ -9,8 +9,6 @@ If this repository helps you in anyway, show your love :heart: by putting a :sta
 <h2 align="center">Hands On Machine Learning with Scikit-Learn and TensorFlow</h2>
 <br>
 
-<h2 align='center'><img width = 200 src='https://camo.githubusercontent.com/27a6f1d2f26314cdbd8d84090aeb8b5d3a56230bdaafc72ec879588728fa4f9a/68747470733a2f2f696d616765732d6e612e73736c2d696d616765732d616d617a6f6e2e636f6d2f696d616765732f492f353161715963315179724c2e5f53583337395f424f312c3230342c3230332c3230305f2e6a7067'  ></h2>
-
 <p style="font-size:17px"><a href="Hands-On-Machine-Learning/PART-1-The Fundamentals of Machine Learning">PART-1-The Fundamentals of Machine Learning</a></p>
 
 ch1. [The Machine Learning Landscape](/Hands-On-Machine-Learning/PART-1-The%20Fundamentals%20of%20Machine%20Learning/CH1%20The%20Machine%20Learning%20Landscape.pdf)<br/>
@@ -35,3 +33,5 @@ ch9. [Unsupervised Learning Techniques](/Hands-On-Machine-Learning/PART-1-The%20
 <br>
 
 1. [Jupyterlab Shortcuts](Jupyterlab-Shortcuts.pdf)
+2. [Data Science Concepts & Interview Preparation](/Data%20Science%20Concepts%20&%20Interview%20Preparation.pdf)
+3. [ML Performance Cheat Sheet](/ML%20Performance%20Cheat%20Sheet.pdf)
