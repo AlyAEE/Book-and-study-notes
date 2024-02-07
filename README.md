@@ -35,3 +35,4 @@ ch9. [Unsupervised Learning Techniques](/Hands-On-Machine-Learning/PART-1-The%20
 1. [Jupyterlab Shortcuts](Jupyterlab-Shortcuts.pdf)
 2. [Data Science Concepts & Interview Preparation](/Data%20Science%20Concepts%20&%20Interview%20Preparation.pdf)
 3. [ML Performance Cheat Sheet](/ML%20Performance%20Cheat%20Sheet.pdf)
+4. [Data Science Resume Tips & Tricks](/Data%20Science%20Resume%20Tips%20&%20Tricks.md)
