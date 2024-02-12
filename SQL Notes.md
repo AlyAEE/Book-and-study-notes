@@ -560,6 +560,13 @@ SELECT player_name,
   FROM DB2
 ```
 
+
+```sql
+SELECT player_name,
+       CASE WHEN year = 'FR' AND position = 'WR' THEN 'frosh_wr'
+            ELSE NULL END AS sample_case_statement
+  FROM DB2
+```
 ## SQL DISTINCT
 
 SQL Aggregate Function 
