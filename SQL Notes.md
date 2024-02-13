@@ -561,11 +561,151 @@ SELECT player_name,
 ```
 
 
+You can also string together multiple conditional statements with `AND` and `OR` the same way you might in a `WHERE` clause:
+
 ```sql
 SELECT player_name,
        CASE WHEN year = 'FR' AND position = 'WR' THEN 'frosh_wr'
             ELSE NULL END AS sample_case_statement
   FROM DB2
+```
+
+### A quick review of CASE basics:
+
+1. The `CASE` statement always goes in the `SELECT` clause
+2. `CASE` must include the following components: `WHEN`, `THEN`, and `END`. `ELSE` is an optional component.
+3. You can make any conditional statement using any conditional operator (like **`[WHERE](https://mode.com/sql-tutorial/sql-where)`** ) between `WHEN` and `THEN`. This includes stringing together multiple conditional statements using `AND` and `OR`.
+4. You can include multiple `WHEN` statements, as well as an `ELSE` statement to deal with any unaddressed conditions.
+
+### Using CASE with aggregate functions
+
+`CASE`'s slightly more complicated and substantially more useful functionality comes from pairing it with aggregate functions. For example, let's say you want to only count rows that fulfill a certain condition. Since `count` ignores nulls, you could use a `CASE` statement to evaluate the condition and produce null or non-null values depending on the outcome:
+
+```sql
+SELECT CASE WHEN year = 'FR' THEN 'FR'
+            ELSE 'Not FR' END AS year_group,
+            COUNT(1) AS count
+  FROM benn.college_football_players
+ GROUP BY CASE WHEN year = 'FR' THEN 'FR'
+               ELSE 'Not FR' END
+```
+
+| year_group | count |
+| --- | --- |
+| Not FR | 1000 |
+| FR | 500 |
+
+Using the `WHERE` clause only allows you to count one condition.
+
+```sql
+SELECT COUNT(1) AS fr_count
+  FROM benn.college_football_players
+ WHERE year = 'FR'
+```
+
+Here's an example of counting multiple conditions in one query:
+
+```sql
+SELECT CASE WHEN year = 'FR' THEN 'FR'
+            WHEN year = 'SO' THEN 'SO'
+            WHEN year = 'JR' THEN 'JR'
+            WHEN year = 'SR' THEN 'SR'
+            ELSE 'No Year Data' END AS year_group,
+            COUNT(1) AS count
+  FROM DB2
+ GROUP BY 1
+```
+
+The above query is an excellent place to use numbers instead of columns in the `GROUP By` clause because repeating the `CASE` statement in the `GROUP BY` clause would make the query obnoxiously long. Alternatively, you can use the column's alias in the `GROUP BY` clause like this:
+
+```sql
+SELECT CASE WHEN year = 'FR' THEN 'FR'
+            WHEN year = 'SO' THEN 'SO'
+            WHEN year = 'JR' THEN 'JR'
+            WHEN year = 'SR' THEN 'SR'
+            ELSE 'No Year Data' END AS year_group,
+            COUNT(1) AS count
+  FROM DB2
+ GROUP BY year_group
+```
+
+Combining `CASE` statements with aggregations can be tricky at first. It's often helpful to write a query containing the `CASE` statement first and run it on its own. Using the previous example, you might first write:
+
+```sql
+SELECT CASE WHEN year = 'FR' THEN 'FR'
+            WHEN year = 'SO' THEN 'SO'
+            WHEN year = 'JR' THEN 'JR'
+            WHEN year = 'SR' THEN 'SR'
+            ELSE 'No Year Data' END AS year_group,
+            *
+  FROM DB2
+```
+
+The above query will show all columns, as well as a column showing the results of the `CASE` statement. From there, you can replace the `*` with an aggregation and add a `GROUP BY` clause. 
+
+```sql
+-- Write a query that counts the number of 300lb+ players for each of the following regions: 
+-- West Coast (CA, OR, WA),Texas, and Other (everywhere else).
+SELECT CASE when state in ('CA','OR','WA') then 'West Coast'
+            when state = 'TX' then 'Texas'
+            ELSE 'Everyone else' End as regions,
+            count(1) as players
+  FROM DB2
+  where weight >= 300
+  group by 1
+```
+
+```sql
+-- Write a query that calculates the combined weight of all underclass players (FR/SO) in California 
+-- as well as the combined weight of all upperclass players (JR/SR) in California.
+SELECT CASE when year in ('FR','SO') then 'underclass'
+            when year in ('JR','SR') then 'upperclass' end as playersclass,
+            sum(weight) as players_weight
+  FROM benn.college_football_players
+  where state = 'CA'
+  group by 1
+```
+
+### Using CASE inside of aggregate functions
+
+In the previous examples, data was displayed vertically, but in some instances, you might want to show data horizontally. This is known as "pivoting”.
+
+```sql
+SELECT CASE WHEN year = 'FR' THEN 'FR'
+            WHEN year = 'SO' THEN 'SO'
+            WHEN year = 'JR' THEN 'JR'
+            WHEN year = 'SR' THEN 'SR'
+            ELSE 'No Year Data' END AS year_group,
+            COUNT(1) AS count
+  FROM DB2
+ GROUP BY 1
+```
+
+And re-orient it horizontally:
+
+```sql
+SELECT COUNT(CASE WHEN year = 'FR' THEN 1 ELSE NULL END) AS fr_count,
+       COUNT(CASE WHEN year = 'SO' THEN 1 ELSE NULL END) AS so_count,
+       COUNT(CASE WHEN year = 'JR' THEN 1 ELSE NULL END) AS jr_count,
+       COUNT(CASE WHEN year = 'SR' THEN 1 ELSE NULL END) AS sr_count
+  FROM DB2
+```
+
+It's worth noting that going from horizontal to vertical orientation can be a substantially more difficult problem depending on the circumstances.
+
+```sql
+-- Write a query that displays the number of players in each state, with FR, SO, JR, and SR players in separate columns 
+-- and another column for the total number of players. Order results such that states with the most players come first.
+
+SELECT state,
+       COUNT(CASE WHEN year = 'FR' THEN 1 ELSE NULL END) AS fr_count,
+       COUNT(CASE WHEN year = 'SO' THEN 1 ELSE NULL END) AS so_count,
+       COUNT(CASE WHEN year = 'JR' THEN 1 ELSE NULL END) AS jr_count,
+       COUNT(CASE WHEN year = 'SR' THEN 1 ELSE NULL END) AS sr_count,
+       COUNT(1) AS total_players
+  FROM DB2
+ GROUP BY state
+ ORDER BY total_players DESC
 ```
 ## SQL DISTINCT
 
