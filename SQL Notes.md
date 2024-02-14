@@ -707,6 +707,23 @@ SELECT state,
  GROUP BY state
  ORDER BY total_players DESC
 ```
+
+```sql
+-- Write a query that shows the number of players at schools with names that start with A through M, 
+-- and the number at schools with names starting with N - Z.
+
+Select Count(CASE WHEN full_school_name BETWEEN 'A' AND 'M' THEN 1 ELSE NULL END) as A_to_M_schools,
+      COUNT(CASE WHEN full_school_name BETWEEN 'N' AND 'Z' THEN 1 ELSE NULL END) as N_to_Z_schools
+FROM DB2
+
+SELECT CASE WHEN school_name < 'n' THEN 'A-M'
+            WHEN school_name >= 'n' THEN 'N-Z'
+            ELSE NULL END AS school_name_group,
+       COUNT(1) AS players
+  FROM DB2
+ GROUP BY 1
+```
+
 ## SQL DISTINCT
 
 SQL Aggregate Function 
