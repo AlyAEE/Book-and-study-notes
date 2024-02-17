@@ -155,13 +155,13 @@ You’ll likely want to filter data using several conditions—possibly more oft
 
 Each **logical operator** is a special snowflake, Here's a quick preview:
 
-- **`[LIKE](https://mode.com/sql-tutorial/sql-like)`** allows you to match similar values, instead of exact values.
-- **`[IN](https://mode.com/sql-tutorial/sql-in-operator)`** allows you to specify a list of values you'd like to include.
-- **`[BETWEEN](https://mode.com/sql-tutorial/sql-between)`** allows you to select only rows within a certain range.
-- **`[IS NULL](https://mode.com/sql-tutorial/sql-is-null)`** allows you to select rows that contain no data in a given column.
-- **`[AND](https://mode.com/sql-tutorial/sql-and-operator)`** allows you to select only rows that satisfy two conditions.
-- **`[OR](https://mode.com/sql-tutorial/sql-or-operator)`** allows you to select rows that satisfy either of two conditions.
-- **`[NOT](https://mode.com/sql-tutorial/sql-not-operator)`** allows you to select rows that do not match a certain condition.
+- **`LIKE`** allows you to match similar values, instead of exact values.
+- **`IN`** allows you to specify a list of values you'd like to include.
+- **`BETWEEN`** allows you to select only rows within a certain range.
+- **`IS NULL`** allows you to select rows that contain no data in a given column.
+- **`AND`** allows you to select only rows that satisfy two conditions.
+- **`OR`** allows you to select rows that satisfy either of two conditions.
+- **`NOT`** allows you to select rows that do not match a certain condition.
 
 ## SQL LIKE
 
@@ -370,10 +370,10 @@ SELECT *
 
 SQL is excellent at aggregating data
 
-- **`[COUNT](https://mode.com/sql-tutorial/sql-count)`** counts how many rows are in a particular column.
-- **`[SUM](https://mode.com/sql-tutorial/sql-sum)`** adds together all the values in a particular column.
-- **`[MIN](https://mode.com/sql-tutorial/sql-min-max)`** and **`[MAX](https://mode.com/sql-tutorial/sql-min-max)`** return the lowest and highest values in a particular column, respectively.
-- **`[AVG](https://mode.com/sql-tutorial/sql-avg)`** calculates the average of a group of selected values.
+- **`COUNT`** counts how many rows are in a particular column.
+- **`SUM`** adds together all the values in a particular column.
+- **`MIN`** and **`MAX`** return the lowest and highest values in a particular column, respectively.
+- **`AVG`** calculates the average of a group of selected values.
 
 ## SQL COUNT
 
@@ -560,7 +560,6 @@ SELECT player_name,
   FROM DB2
 ```
 
-
 You can also string together multiple conditional statements with `AND` and `OR` the same way you might in a `WHERE` clause:
 
 ```sql
@@ -703,7 +702,7 @@ SELECT state,
        COUNT(CASE WHEN year = 'JR' THEN 1 ELSE NULL END) AS jr_count,
        COUNT(CASE WHEN year = 'SR' THEN 1 ELSE NULL END) AS sr_count,
        COUNT(1) AS total_players
-  FROM DB2
+  FROM benn.college_football_players
  GROUP BY state
  ORDER BY total_players DESC
 ```
@@ -726,40 +725,356 @@ SELECT CASE WHEN school_name < 'n' THEN 'A-M'
 
 ## SQL DISTINCT
 
-SQL Aggregate Function 
+You can use DISTINCT to select unique values in a particular column.
+
+```sql
+SELECT DISTINCT month
+  FROM DB3
+```
+
+If you include two (or more) columns in a `SELECT DISTINCT` clause, your results will contain all of the unique pairs of those two columns:
+
+```sql
+SELECT DISTINCT year, month
+  FROM DB3
+```
+
+`DISTINCT` can be particularly helpful when exploring a new data set. In many real-world scenarios, you will generally end up writing several preliminary queries in order to figure out the best approach to answering your initial question. Looking at the unique values on each column can help identify how you might want to group or filter the data.
+
+### Using DISTINCT in aggregations
+
+You can use `DISTINCT` when performing an aggregation. You'll probably use it most commonly with the `COUNT` function.
+
+In this case, you should run the query below that counts the unique values in the `month` column.
+
+```sql
+SELECT COUNT(DISTINCT month) AS unique_months
+  FROM DB3
+```
+
+You'll notice that `DISTINCT` goes inside the aggregate function rather than at the beginning of the `SELECT` clause. Of course, you can `SUM` or `AVG` the distinct values in a column, but there are fewer practical applications for them. For `MAX` and `MIN`, you probably shouldn't ever use `DISTINCT` because the results will be the same as without `DISTINCT`, and the `DISTINCT` function will make your query substantially slower to return results.
+
+### DISTINCT performance
+
+It's worth noting that using `DISTINCT`, particularly in aggregations, can slow your queries down quite a bit. 
+
+```sql
+-- Write a query that counts the number of unique values in the month column for each year.
+
+SELECT year,
+      COUNT(DISTINCT month) AS unique_months
+  FROM tutorial.aapl_historical_stock_price
+  GROUP BY year
+  ORDER BY year
+```
+
+```sql
+-- Write a query that separately counts the number of unique values in the month column
+-- and the number of unique values in the `year` column.
+
+SELECT COUNT(DISTINCT month) AS unique_months,
+      COUNT(DISTINCT year) AS unique_years
+  FROM tutorial.aapl_historical_stock_price
+```
 
 ## SQL JOINS
 
-SQL Aggregate Function 
+The real power of SQL comes from working with data from multiple tables at once. The tables we’ve been working with up to this point are all part of the same schema in a relational database. The term "relational database" refers to the fact that the tables within it "relate" to one another—they contain common identifiers that allow information from multiple tables to be combined easily.
+
+Let's say we want to figure out which conference has the highest average weight. Given that information is in two separate tables, how do you do that? A join!
+
+```sql
+SELECT teams.conference AS conference,
+       AVG(players.weight) AS average_weight
+  FROM benn.college_football_players players
+  JOIN benn.college_football_teams teams
+    ON teams.school_name = players.school_name
+ GROUP BY teams.conference
+ ORDER BY AVG(players.weight) DESC
+```
+
+### **Aliases in SQL**
+
+When performing joins, it's easiest to give your table names aliases. `benn.college_football_players` is pretty long and annoying to type—`players` is much easier. You can give a table an alias by adding a space after the table name and typing the intended name of the alias. As with column names, best practice here is to use all lowercase letters and underscores instead of spaces.
+
+### **JOIN and ON**
+
+After the `FROM` statement, we have two new statements: `JOIN`, which is followed by a table name, and `ON`, which is followed by a couple column names separated by an equals sign.
+
+Though the `ON` statement comes after `JOIN`, it's a bit easier to explain it first. `ON` indicates how the two tables (the one after the `FROM` and the one after the `JOIN`) relate to each other. 
+
+The two columns that map to one another, are referred to as "foreign keys" or "join keys." Their mapping is written as a conditional statement:
+
+```sql
+ON teams.school_name = players.school_name
+```
 
 ## SQL INNER JOIN
 
-SQL Aggregate Function 
+Inner joins, which can be written as either `JOIN DB2` or `INNER JOIN DB2` Inner joins eliminate rows from both tables that do not satisfy the join condition set forth in the `ON` statement. In mathematical terms, an inner join is the *intersection* of the two tables.
+
+![Untitled](Images/Untitled.png)
+
+### Joining tables with identical column names
+
+When you join two tables, it might be the case that both tables have columns with identical names. In the below example, both tables have columns called `school_name`:
+
+```sql
+SELECT players.*,
+       teams.*
+  FROM DB1_PLAYERS players
+  JOIN DB2_TEAMS teams
+    ON teams.school_name = players.school_name
+```
+
+The results can only support one column with a given name—when you include 2 columns of the same name, the results will simply show the exact same result set for both columns **even if the two columns should contain different data**. You can avoid this by naming the columns individually. It happens that these two columns will actually contain the same data because they are used for the join key, but the following query technically allows these columns to be independent:
+
+```sql
+SELECT players.school_name AS players_school_name,
+       teams.school_name AS teams_school_name
+  FROM DB1_PLAYERS players
+  JOIN DB2_TEAMS teams
+    ON teams.school_name = players.school_name
+```
+
+```sql
+-- Write a query that displays player names, school names and conferences for schools in the "FBS (Division I-A Teams)" division.
+SELECT players.player_name AS player_name,
+       players.school_name  AS school_name,
+       teams.conference AS conferebces
+  FROM DB1_PLAYERS players
+  JOIN DB2_TEAMS teams
+    ON teams.school_name = players.school_name
+    WHERE teams.division = 'FBS (Division I-A Teams)'
+```
 
 ## SQL OUTER JOINS
 
-SQL Aggregate Function 
+Outer joins are joins that return matched values **and** unmatched values from either or both tables. There are a few types of outer joins:
 
-## SQL LEFT JOINS
+- **`LEFT JOIN` returns only unmatched rows from the left table**, as well as matched rows in both tables.
+- **`RIGHT JOIN` returns only unmatched rows from the right table** , as well as matched rows in both tables.
+- **`FULL OUTER JOIN` returns unmatched rows from both tables,** as well as matched rows in both tables.
 
-SQL Aggregate Function 
+### Outer joins vs. Inner join
 
-## SQL RIGHT JOINS
+When performing an **inner join**, rows from either table that are unmatched in the other table are not returned. In an outer join, unmatched rows in one or both tables can be returned.
 
-SQL Aggregate Function 
+![Untitled](Images/Untitled%201.png)
+
+## SQL LEFT JOIN
+
+![Untitled](Images/Untitled%202.png)
+
+`LEFT JOIN` command tells the database to return all rows in the table in the `FROM` clause, regardless of whether or not they have matches in the table in the `LEFT JOIN` clause.
+
+```sql
+SELECT companies.permalink AS companies_permalink,
+       companies.name AS companies_name,
+       acquisitions.company_permalink AS acquisitions_permalink,
+       acquisitions.acquired_at AS acquired_date
+  FROM tutorial.crunchbase_companies companies
+  LEFT JOIN tutorial.crunchbase_acquisitions acquisitions
+    ON companies.permalink = acquisitions.company_permalink
+```
+
+```sql
+-- Write a query that performs an inner join between the tutorial.crunchbase_acquisitions table and the tutorial.crunchbase_companies table, 
+-- but instead of listing individual rows, count the number of non-null rows in each table.
+
+SELECT COUNT(companies.permalink) AS companies_rowcount,
+       COUNT(acquisitions.company_permalink) AS acquisitions_rowcount
+FROM tutorial.crunchbase_companies companies
+INNER JOIN tutorial.crunchbase_acquisitions acquisitions
+  ON companies.permalink = acquisitions.company_permalink
+```
+
+```sql
+-- Count the number of unique companies (don't double-count companies) and unique acquired companies by state.
+-- Do not include results for which there is no state data, and order by the number of acquired companies from highest to lowest.
+
+SELECT companies.state_code as state_code,
+       COUNT(DISTINCT companies.permalink) AS unique_companies,
+       COUNT(DISTINCT acquisitions.company_permalink) AS unique_companies_acquired
+FROM tutorial.crunchbase_companies companies
+LEFT JOIN tutorial.crunchbase_acquisitions acquisitions
+  ON companies.permalink = acquisitions.company_permalink
+  WHERE state_code IS NOT NULL 
+  GROUP BY state_code
+  ORDER BY unique_companies_acquired DESC
+```
+
+## SQL RIGHT JOIN
+
+Right joins are similar to left joins except they return all rows from the table in the `RIGHT JOIN` clause and only matching rows from the table in the `FROM` clause.
+
+![Untitled](Images/Untitled%203.png)
+
+`RIGHT JOIN` is rarely used because you can achieve the results of a `RIGHT JOIN` by simply switching the two joined table names in a `LEFT JOIN`.
+
+The convention of always using `LEFT JOIN` probably exists to make queries easier to read and audit, but beyond that there isn't necessarily a strong reason to avoid using `RIGHT JOIN`.
+
+It's worth noting that `LEFT JOIN` and `RIGHT JOIN` can be written as `LEFT OUTER JOIN` and `RIGHT OUTER JOIN`, respectively.
+
+```sql
+-- Rewrite the previous practice query in which you counted total and acquired companies by state, but with a RIGHT JOIN instead of a LEFT JOIN.
+-- The goal is to produce the exact same results.
+
+SELECT companies.state_code as state_code,
+       COUNT(DISTINCT companies.permalink) AS unique_companies,
+       COUNT(DISTINCT acquisitions.company_permalink) AS unique_companies_acquired
+FROM tutorial.crunchbase_acquisitions acquisitions
+RIGHT JOIN tutorial.crunchbase_companies companies
+  ON companies.permalink = acquisitions.company_permalink
+  WHERE state_code IS NOT NULL 
+  GROUP BY state_code
+  ORDER BY unique_companies_acquired DESC
+```
 
 ## SQL JOINS Using WHERE or ON
 
+## Filtering in the ON clause
+
+Normally, filtering is processed in the **`WHERE`** clause once the **two tables have already been joined**. It's possible, though that you might want to filter one or both of the tables *before* joining them. For example, you only want to create matches between the tables under certain circumstances.
+
+```sql
+SELECT companies.permalink AS companies_permalink,
+       companies.name AS companies_name,
+       acquisitions.company_permalink AS acquisitions_permalink,
+       acquisitions.acquired_at AS acquired_date
+  FROM tutorial.crunchbase_companies companies
+  LEFT JOIN tutorial.crunchbase_acquisitions acquisitions
+    ON companies.permalink = acquisitions.company_permalink
+   AND acquisitions.company_permalink != '/company/1000memories'
+ ORDER BY 1
+```
+
+What's happening above is that the conditional statement `AND...` is evaluated before the join occurs. You can think of it as a `WHERE` clause that only applies to one of the tables. You can tell that this is only happening in one of the tables because the 1000memories permalink is still displayed in the column that pulls from the other table:
+
+![Untitled](Images/Untitled%204.png)
+
+### Filtering in the WHERE clause
+
+If you move the same filter to the `WHERE` clause, you will notice that the filter happens after the tables are joined. The result is that the 1000memories row is joined onto the original table, but then it is filtered out entirely (in both tables) in the `WHERE` clause before displaying results.
+
+```
+SELECT companies.permalink AS companies_permalink,
+       companies.name AS companies_name,
+       acquisitions.company_permalink AS acquisitions_permalink,
+       acquisitions.acquired_at AS acquired_date
+  FROM tutorial.crunchbase_companies companies
+  LEFT JOIN tutorial.crunchbase_acquisitions acquisitions
+    ON companies.permalink = acquisitions.company_permalink
+ WHERE acquisitions.company_permalink != '/company/1000memories'
+    OR acquisitions.company_permalink IS NULL
+ ORDER BY 1
+
+```
+
+You can see that the 1000memories line is not returned (it would have been between the two highlighted lines below). Also note that filtering in the `WHERE` clause can also filter null values, so we added an extra line to make sure to include the nulls.
+
+![Untitled](Images/Untitled%205.png)
+
+```sql
+-- Write a query that shows a company's name, "status" (found in the Companies table), and the number of unique investors in that company.
+-- Order by the number of investors from most to fewest. 
+-- Limit to only companies in the state of New York.
+
+SELECT companies.name AS company_name,
+       companies.status AS company_status,
+       COUNT(DISTINCT investments.investor_name) as investor_count
+  FROM tutorial.crunchbase_companies companies
+  LEFT JOIN tutorial.crunchbase_investments investments
+  ON companies.permalink = investments.company_permalink 
+  WHERE companies.state_code = 'NY'
+  GROUP BY companies.name,companies.status
+  ORDER BY investor_count DESC
+```
+
+```sql
+-- Write a query that lists investors based on the number of companies in which they are invested. 
+-- Include a row for companies with no investor, and order from most companies to least.
+
+SELECT CASE WHEN investments.investor_name IS NULL THEN 'No Investors'
+            ELSE investments.investor_name END AS investor,
+       COUNT(DISTINCT companies.permalink) AS companies_invested_in
+  FROM tutorial.crunchbase_companies companies
+  LEFT JOIN tutorial.crunchbase_investments investments
+    ON companies.permalink = investments.company_permalink
+ GROUP BY 1
+ ORDER BY 2 DESC
+```
+
 ## SQL FULL OUTER JOINS
+
+We’re not likely to use `FULL JOIN` (which can also be written as `FULL OUTER JOIN`) too often, but it's worth covering anyway. **`LEFT JOIN`** and **`RIGHT JOIN`** each return unmatched rows from one of the tables—`FULL JOIN` returns unmatched rows from both tables. It is commonly used in conjunction with aggregations to understand the amount of overlap between two tables.
+
+```sql
+SELECT COUNT(CASE WHEN companies.permalink IS NOT NULL AND acquisitions.company_permalink IS NULL
+                  THEN companies.permalink ELSE NULL END) AS companies_only,
+       COUNT(CASE WHEN companies.permalink IS NOT NULL AND acquisitions.company_permalink IS NOT NULL
+                  THEN companies.permalink ELSE NULL END) AS both_tables,
+       COUNT(CASE WHEN companies.permalink IS NULL AND acquisitions.company_permalink IS NOT NULL
+                  THEN acquisitions.company_permalink ELSE NULL END) AS acquisitions_only
+  FROM tutorial.crunchbase_companies companies
+  FULL JOIN tutorial.crunchbase_acquisitions acquisitions
+    ON companies.permalink = acquisitions.company_permalink
+```
 
 ## SQL UNION
 
-SQL Aggregate Function 
+SQL joins allow you to combine two datasets side-by-side, but `UNION` allows you to stack one dataset on top of the other. Put differently, `UNION` allows you to write two separate `SELECT` statements, and to have the results of one statement display in the same table as the results from the other statement.
+
+```sql
+SELECT *
+  FROM tutorial.crunchbase_investments_part1
+
+ UNION
+
+ SELECT *
+   FROM tutorial.crunchbase_investments_part2
+```
+
+Note that `UNION` only appends distinct values. More specifically, when you use `UNION`, the dataset is appended, and any rows in the appended table that are exactly identical to rows in the first table are dropped. If you'd like to append all the values from the second table, use `UNION ALL`. You'll likely use `UNION ALL` far more often than `UNION`.
+
+```sql
+SELECT *
+  FROM tutorial.crunchbase_investments_part1
+
+ UNION ALL
+
+ SELECT *
+   FROM tutorial.crunchbase_investments_part2
+```
+
+SQL has strict rules for appending data:
+
+1. Both tables must have the same number of columns
+2. The columns must have the same data types in the same order as the first table
+
+While the column names don't necessarily have to be the same, you will find that they typically are. This is because most of the instances in which you'd want to use `UNION` involve stitching together different parts of the same dataset.
+
+Since you are writing two separate `SELECT` statements, you can treat them differently before appending. For example, you can filter them differently using different `WHERE` clauses.
+
+```sql
+-- Write a query that appends the two crunchbase_investments datasets above (including duplicate values).
+-- Filter the first dataset to only companies with names that start with the letter "T", 
+-- and filter the second to companies with names starting with "M" (both not case-sensitive). 
+-- Only include the company_permalink, company_name, and investor_name columns.
+SELECT company_permalink, company_name, investor_name
+  FROM tutorial.crunchbase_investments_part1
+WHERE company_name ILIKE 'T%'
+ UNION ALL
+
+ SELECT company_permalink,company_name,investor_name
+   FROM tutorial.crunchbase_investments_part2
+   WHERE company_name ILIKE '%M'
+```
+
+### **Sharpen your SQL skills**
 
 ## SQL JOINS With Comparison Operators
 
 ## SQL JOINS on Multiple Keys
 
 ## SQL Self Joins
-
-SQL Aggregate Function
