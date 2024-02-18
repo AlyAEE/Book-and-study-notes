@@ -1070,11 +1070,103 @@ WHERE company_name ILIKE 'T%'
    FROM tutorial.crunchbase_investments_part2
    WHERE company_name ILIKE '%M'
 ```
+```sql
+-- Write a query that shows 3 columns. The first indicates which dataset (part 1 or 2) the data comes from, 
+-- the second shows company status, and the third is a count of the number of investors.
 
-### **Sharpen your SQL skills**
+-- Hint: you will have to use the tutorial.crunchbase_companies table as well as the investments tables. 
+-- And you'll want to group by status and dataset.
+
+SELECT 'investments_part1' AS dataset_name,
+       companies.status,
+       COUNT(DISTINCT investments.investor_permalink) AS investors
+  FROM tutorial.crunchbase_companies companies
+  LEFT JOIN tutorial.crunchbase_investments_part1 investments
+    ON companies.permalink = investments.company_permalink
+ GROUP BY 1,2
+
+ UNION ALL
+ 
+ SELECT 'investments_part2' AS dataset_name,
+       companies.status,
+       COUNT(DISTINCT investments.investor_permalink) AS investors
+  FROM tutorial.crunchbase_companies companies
+  LEFT JOIN tutorial.crunchbase_investments_part2 investments
+    ON companies.permalink = investments.company_permalink
+ GROUP BY 1,2
+```
 
 ## SQL JOINS With Comparison Operators
 
+We’ve only joined tables by exactly matching values from both tables. However, you can enter any type of conditional statement into the `ON` clause. Here's an example using `>` to join only investments that occurred more than 5 years after each company's founding year:
+
+```sql
+SELECT companies.permalink,
+       companies.name,
+       companies.status,
+       COUNT(investments.investor_permalink) AS investors
+  FROM tutorial.crunchbase_companies companies
+  LEFT JOIN tutorial.crunchbase_investments_part1 investments
+    ON companies.permalink = investments.company_permalink
+   AND investments.funded_year > companies.founded_year + 5
+ GROUP BY 1,2,3
+```
+
+This technique is especially useful for creating date ranges as shown above. 
+
+It's important to note that this produces a different result than the following query because it only joins rows that fit the `investments.funded_year > companies.founded_year + 5` condition rather than joining all rows and then filtering:
+
+```sql
+SELECT companies.permalink,
+       companies.name,
+       companies.status,
+       COUNT(investments.investor_permalink) AS investors
+  FROM tutorial.crunchbase_companies companies
+  LEFT JOIN tutorial.crunchbase_investments_part1 investments
+    ON companies.permalink = investments.company_permalink
+ WHERE investments.funded_year > companies.founded_year + 5
+ GROUP BY 1,2,3
+```
+
 ## SQL JOINS on Multiple Keys
 
+There are couple reasons you might want to join tables on multiple foreign keys. 
+
+- The first has to do with accuracy.
+- The second reason has to do with performance.
+
+SQL uses "indexes" (essentially pre-defined joins) to speed up queries. It can occasionally make your query run faster to join on multiple fields, even when it does not add to the accuracy of the query. 
+
+For example, the results of the following query will be the same with or without the last line. However, it is possible to optimize the database such that the query runs more quickly with the last line included:
+
+```sql
+SELECT companies.permalink,
+       companies.name,
+       investments.company_name,
+       investments.company_permalink
+  FROM tutorial.crunchbase_companies companies
+  LEFT JOIN tutorial.crunchbase_investments_part1 investments
+    ON companies.permalink = investments.company_permalink
+   AND companies.name = investments.company_name
+```
+
 ## SQL Self Joins
+
+Sometimes it can be useful to join a table to itself. 
+
+Let’s say you wanted to identify companies that received an investment from Great Britain following an investment from Japan.
+
+```sql
+SELECT DISTINCT japan_investments.company_name,
+	   japan_investments.company_permalink
+  FROM tutorial.crunchbase_investments_part1 japan_investments
+  JOIN tutorial.crunchbase_investments_part1 gb_investments
+    ON japan_investments.company_name = gb_investments.company_name
+   AND gb_investments.investor_country_code = 'GBR'
+   AND gb_investments.funded_at > japan_investments.funded_at
+ WHERE japan_investments.investor_country_code = 'JPN'
+ ORDER BY 1
+
+```
+
+Note how the same table can easily be referenced multiple times using different aliases—in this case, `japan_investments` and `gb_investments`.
