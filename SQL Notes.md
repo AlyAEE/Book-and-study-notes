@@ -1496,6 +1496,312 @@ ORDER BY no_companies_acquired DESC
 
 ## Data Wrangling with SQL
 
+**Data wrangling** (or munging) is the process of programmatically transforming data into a format that makes it easier to work with. This might mean modifying all of the values in a given column in a certain way, or merging multiple columns together. The necessity for data wrangling is often a biproduct of poorly collected or presented data. 
+
+Data that is entered manually by humans is typically fraught with errors; data collected from websites is often optimized to be displayed on websites, not to be sorted and aggregated.
+
+## Using SQL String Functions to Clean Data
+
+Most of the functions presented in this lesson are specific to certain data types. However, using a particular function will, in many cases, change the data to the appropriate type. `LEFT`, `RIGHT`, and `TRIM` are all used to select only certain elements of strings, but using them to select elements of a number or date will treat them as strings for the purpose of the function.
+
+### **LEFT, RIGHT, and LENGTH**
+
+You can use `LEFT` to pull a certain number of characters from the left side of a string and present them as a separate string. The syntax is `LEFT(string, number of characters)`.
+
+As a practical example, we can see that the `date` field in this dataset begins with a 10-digit date, and include the timestamp to the right of it. The following query pulls out only the date `01/31/2014 08:00:00 AM +0000 => 01/31/2014`
+
+```sql
+SELECT incidnt_num,
+       date,
+       LEFT(date, 10) AS cleaned_date
+  FROM tutorial.sf_crime_incidents_2014_01
+
+```
+
+`RIGHT` does the same thing, but from the right side:
+
+```sql
+SELECT incidnt_num,
+       date,
+       LEFT(date, 10) AS cleaned_date,
+       RIGHT(date, 17) AS cleaned_time
+  FROM tutorial.sf_crime_incidents_2014_01
+
+```
+
+`RIGHT` works well in this case because we know that the number of characters will be consistent across the entire `date` field. If it wasn't consistent, it's still possible to pull a string from the right side in a way that makes sense. The `LENGTH` function returns the length of a string. So `LENGTH(date)` will always return `28` in this dataset. Since we know that the first 10 characters will be the date, and they will be followed by a space (total 11 characters), we could represent the `RIGHT` function like this:
+
+```sql
+SELECT incidnt_num,
+       date,
+       LEFT(date, 10) AS cleaned_date,
+       RIGHT(date, LENGTH(date) - 11) AS cleaned_time
+  FROM tutorial.sf_crime_incidents_2014_01
+
+```
+
+When using functions within other functions, it's important to remember that the innermost functions will be evaluated first, followed by the functions that encapsulate them.
+
+### **TRIM**
+
+The `TRIM` function is used to remove characters from the beginning and end of a string. Here's an example:
+
+```sql
+SELECT location,
+       TRIM(both '()' FROM location)
+  FROM tutorial.sf_crime_incidents_2014_01
+
+```
+
+The `TRIM` function takes 3 arguments. First, you have to specify whether you want to remove characters from the beginning ('**leading**'), the end ('**trailing**'), or both ('**both**', as used above). 
+
+Next you must specify all characters to be trimmed. Any characters included in the single quotes will be removed from both beginning, end, or both sides of the string. Finally, you must specify the text you want to trim using `FROM`.
+
+### **POSITION and STRPOS**
+
+`POSITION` allows you to specify a substring, then returns a numerical value equal to the character number (counting from left) where that substring first appears in the target string. 
+
+For example, the following query will return the position of the character 'A' (case-sensitive) where it first appears in the `descript` field:
+
+```sql
+SELECT incidnt_num,
+       descript,
+       POSITION('A' IN descript) AS a_position
+  FROM tutorial.sf_crime_incidents_2014_01
+
+```
+
+You can also use the `STRPOS` function to achieve the same results—just replace `IN` with a comma and switch the order of the string and substring:
+
+```sql
+SELECT incidnt_num,
+       descript,
+       STRPOS(descript, 'A') AS a_position
+  FROM tutorial.sf_crime_incidents_2014_01
+
+```
+
+Importantly, both the `POSITION` and `STRPOS` functions are case-sensitive. If you want to look for a character regardless of its case, you can make your entire string a single by using the `UPPER` or `LOWER` functions.
+
+### **SUBSTR**
+
+`LEFT` and `RIGHT` both create substrings of a specified length, but they only do so starting from the sides of an existing string. If you want to start in the middle of a string, you can use `SUBSTR`. The syntax is `SUBSTR(*string*, *starting character position*, *# of characters*)`:
+
+```sql
+SELECT incidnt_num,
+       date,
+       SUBSTR(date, 4, 2) AS day
+  FROM tutorial.sf_crime_incidents_2014_01
+```
+
+```sql
+-- Write a query that separates the `location` field into separate fields for latitude and longitude. 
+-- You can compare your results against the actual `lat` and `lon` fields in the table.
+-- Location (37.709725805163, -122.413623946206)
+SELECT location,
+       TRIM(leading '(' FROM LEFT(location, POSITION(',' IN location) - 1)) AS lattitude,
+       TRIM(trailing ')' FROM RIGHT(location, LENGTH(location) - POSITION(',' IN location) ) ) AS longitude
+  FROM tutorial.sf_crime_incidents_2014_01
+```
+
+### **CONCAT**
+
+You can combine strings from several columns together (and with hard-coded values) using `CONCAT`. Simply order the values you want to concatenate and separate them with commas. If you want to hard-code values, enclose them in single quotes. Here's an example:
+
+```sql
+SELECT incidnt_num,
+       day_of_week,
+       LEFT(date, 10) AS cleaned_date,
+       CONCAT(day_of_week, ', ', LEFT(date, 10)) AS day_and_date
+  FROM tutorial.sf_crime_incidents_2014_01
+```
+
+Alternatively, you can use two pipe characters (`||`) to perform the same concatenation:
+
+```sql
+SELECT incidnt_num,
+       day_of_week,
+       LEFT(date, 10) AS cleaned_date,
+       day_of_week || ', ' || LEFT(date, 10) AS day_and_date
+  FROM tutorial.sf_crime_incidents_2014_01
+```
+
+```sql
+-- Concatenate the lat and lon fields to form a field that is equivalent to the location field.
+-- (Note that the answer will have a different decimal precision.)
+-- lon 37.7097, lat -122.4136 , new_location (37.709725805163, -122.413623946206)
+
+SELECT lat,
+       lon,
+       CONCAT('(',lat,', ',lon,')') AS new_location
+  FROM tutorial.sf_crime_incidents_2014_01
+
+-- Create the same concatenated location field, but using the || syntax instead of CONCAT.
+SELECT lat,
+       lon,
+       location,
+       '(' || lat || ', ' || lon || ')' AS new_location
+  FROM tutorial.sf_crime_incidents_2014_01
+```
+
+```sql
+-- Write a query that creates a date column formatted YYYY-MM-DD.
+-- old-date 01/31/2014 08:00:00 AM +0000
+-- new-date 2014-01-31
+
+SELECT CONCAT(SUBSTR(date, 7, 4), '-', SUBSTR(date, 1, 2), '-', SUBSTR(date, 4, 2)) AS new_date
+  FROM tutorial.sf_crime_incidents_2014_01
+
+```
+
+### **Changing case with UPPER and LOWER**
+
+You can use `LOWER` to force every character in a string to become lower-case. Similarly, you can use `UPPER` to make all the letters appear in upper-case:
+
+```sql
+SELECT incidnt_num,
+       address,
+       UPPER(address) AS address_upper,
+       LOWER(address) AS address_lower
+  FROM tutorial.sf_crime_incidents_2014_01
+```
+
+```sql
+-- Write a query that returns the `category` field, but with the first letter capitalized and the rest of the letters in lower-case.
+
+SELECT CONCAT(UPPER(LEFT(category,1)), 
+              LOWER(RIGHT(category, LENGTH(category) - 1))) AS category_reform
+  FROM tutorial.sf_crime_incidents_2014_01
+```
+
+There are a number of variations of these functions, as well as several other string functions not covered here. Different databases use subtle variations on these functions, so be sure to look up the appropriate database's syntax. This is **[Postgres literature](http://www.postgresql.org/docs/9.1/static/functions-string.html)** contains the related functions.
+
+### Turning strings into dates
+
+Dates are some of the most commonly screwed-up formats in SQL. This can be the result of a few things:
+
+- The data was manipulated in Excel at some point, and the dates were changed to MM/DD/YYYY format or another format that is not compliant with SQL's strict standards.
+- The data was manually entered by someone who use whatever formatting convention he/she was most familiar with.
+- The date uses text (Jan, Feb, etc.) instead of numbers to record months.
+
+In order to take advantage of all of the great date functionality (`INTERVAL`, as well as some others), you need to have your date field formatted appropriately. This often involves some text manipulation, followed by a `CAST`. 
+
+```sql
+-- Convert the date(string) column into a date format
+-- old_date => 01/31/2014 08:00:00 AM +0000, new_date => 2014-01-31 00:00:00
+SELECT incidnt_num,
+       date,
+       (SUBSTR(date, 7, 4) || '-' || LEFT(date, 2) ||
+        '-' || SUBSTR(date, 4, 2))::date AS cleaned_date
+  FROM tutorial.sf_crime_incidents_2014_01
+```
+
+```sql
+-- Write a query that creates an accurate timestamp using the date and time columns in tutorial.sf_crime_incidents_2014_01. 
+-- Include a field that is exactly 1 week later as well.
+-- time contains the hour:mins
+
+SELECT incidnt_num,
+       date,
+       (SUBSTR(date, 7, 4) || '-' || 
+       LEFT(date, 2) || '-' || 
+       SUBSTR(date, 4, 2) || ' ' ||
+       timetime || ':00')::TIMESTAMP AS cleaned_date,
+       (SUBSTR(date, 7, 4) || '-' || 
+       LEFT(date, 2) || '-' || 
+       SUBSTR(date, 4, 2) || ' ' ||
+       time || ':00')::TIMESTAMP + INTERVAL '1 week' AS week_after
+  FROM tutorial.sf_crime_incidents_2014_01
+```
+
+### Turning dates into more useful dates
+
+You've learned how to construct a date field, but what if you want to deconstruct one? You can use `EXTRACT` to pull the pieces apart one-by-one:
+
+```sql
+SELECT cleaned_date,
+       EXTRACT('year'   FROM cleaned_date) AS year,
+       EXTRACT('month'  FROM cleaned_date) AS month,
+       EXTRACT('day'    FROM cleaned_date) AS day,
+       EXTRACT('hour'   FROM cleaned_date) AS hour,
+       EXTRACT('minute' FROM cleaned_date) AS minute,
+       EXTRACT('second' FROM cleaned_date) AS second,
+       EXTRACT('decade' FROM cleaned_date) AS decade,
+       EXTRACT('dow'    FROM cleaned_date) AS day_of_week
+  FROM tutorial.sf_crime_incidents_cleandate
+
+```
+
+You can also round dates to the nearest unit of measurement. This is particularly useful if you don't care about an individual date, but do care about the week (or month, or quarter) that it occurred in. The `DATE_TRUNC` function rounds a date to whatever precision you specify. The value displayed is the first value in that period. So when you `DATE_TRUNC` by year, any value in that year will be listed as January 1st of that year:
+
+```sql
+SELECT cleaned_date,
+       DATE_TRUNC('year'   , cleaned_date) AS year,
+       DATE_TRUNC('month'  , cleaned_date) AS month,
+       DATE_TRUNC('week'   , cleaned_date) AS week,
+       DATE_TRUNC('day'    , cleaned_date) AS day,
+       DATE_TRUNC('hour'   , cleaned_date) AS hour,
+       DATE_TRUNC('minute' , cleaned_date) AS minute,
+       DATE_TRUNC('second' , cleaned_date) AS second,
+       DATE_TRUNC('decade' , cleaned_date) AS decade
+  FROM tutorial.sf_crime_incidents_cleandate
+```
+
+```sql
+-- Write a query that counts the number of incidents reported by week. Cast the week as a date to get rid of the hours/minutes/seconds.
+  
+  SELECT DATE_TRUNC('week', cleaned_date)::date AS week_beginning,
+       COUNT(*) AS incidents
+  FROM tutorial.sf_crime_incidents_cleandate
+ GROUP BY 1
+ ORDER BY 1
+```
+
+What if you want to include today's date or time? You can instruct your query to pull the local date and time at the time the query is run using any number of functions. Interestingly, you can run them without a `FROM` clause:
+
+```sql
+SELECT CURRENT_DATE AS date,
+       CURRENT_TIME AS time,
+       CURRENT_TIMESTAMP AS timestamp,
+       LOCALTIME AS localtime,
+       LOCALTIMESTAMP AS localtimestamp,
+       NOW() AS now
+
+```
+
+You can make a time appear in a different time zone using `AT TIME ZONE`:
+
+```sql
+SELECT CURRENT_TIME AS time,
+       CURRENT_TIME AT TIME ZONE 'PST' AS time_pst
+
+```
+
+For a complete list of time zones, **[look here](http://www.postgresql.org/docs/7.2/static/timezones.html)**. This functionality is pretty complex because timestamps can be stored with or without time zone metadata. For a better understanding of the exact syntax, we recommend checking out the **[Postgres documentation](http://www.postgresql.org/docs/9.2/static/functions-datetime.html#FUNCTIONS-DATETIME-ZONECONVERT)**.
+
+```sql
+-- Write a query that shows exactly how long ago each indicent was reported. 
+-- Assume that the dataset is in Pacific Standard Time (UTC).
+
+SELECT NOW() AT TIME ZONE 'UTC' AS now,
+        cleaned_date,
+        AGE(cleaned_date) as time_since_incident
+  FROM tutorial.sf_crime_incidents_cleandate
+```
+
+## COALESCE
+
+Occasionally, you will end up with a dataset that has some nulls that you'd prefer to contain actual values. This happens frequently in numerical data (displaying nulls as 0 is often preferable), and when performing outer joins that result in some unmatched rows. In cases like this, you can use `COALESCE` to replace the null values:
+
+```sql
+SELECT incidnt_num,
+       descript,
+       COALESCE(descript, 'No Description')
+  FROM tutorial.sf_crime_incidents_cleandate
+ ORDER BY descript DESC
+
+```
+
 ## Using SQL String Functions to Clean Data
 
 ## Writing Subqueries in SQL
