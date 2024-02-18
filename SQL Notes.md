@@ -1496,6 +1496,7 @@ ORDER BY no_companies_acquired DESC
 
 ## Data Wrangling with SQL
 
+
 **Data wrangling** (or munging) is the process of programmatically transforming data into a format that makes it easier to work with. This might mean modifying all of the values in a given column in a certain way, or merging multiple columns together. The necessity for data wrangling is often a biproduct of poorly collected or presented data. 
 
 Data that is entered manually by humans is typically fraught with errors; data collected from websites is often optimized to be displayed on websites, not to be sorted and aggregated.
@@ -1802,9 +1803,347 @@ SELECT incidnt_num,
 
 ```
 
-## Using SQL String Functions to Clean Data
-
 ## Writing Subqueries in SQL
+
+## Subquery basics
+
+**Subqueries** (also known as inner queries or nested queries) are a tool for performing operations in multiple steps. 
+
+For example, if you wanted to take the sums of several columns, then average all of those values, you'd need to do each aggregation in a distinct step.
+
+**Subqueries** can be used in several places within a query, but it's easiest to start with the `FROM` statement. Here's an example of a basic subquery:
+
+```sql
+SELECT sub.*
+  FROM (
+        SELECT *
+          FROM tutorial.sf_crime_incidents_2014_01
+         WHERE day_of_week = 'Friday'
+       ) sub
+ WHERE sub.resolution = 'NONE'
+
+```
+
+Let's break down what happens when you run the above query:
+
+First, the database runs the "inner query"—the part between the parentheses:
+
+```sql
+SELECT *
+  FROM tutorial.sf_crime_incidents_2014_01
+ WHERE day_of_week = 'Friday'
+
+```
+
+If you were to run this on its own, it would produce a result set like any other query. It might sound like a no-brainer, but it's important: your inner query must actually run on its own, as the database will treat it as an independent query. Once the inner query runs, the outer query will run *using the results from the inner query as its underlying table*:
+
+```sql
+SELECT sub.*
+  FROM (
+       <<results from inner query go here>>
+       ) sub
+ WHERE sub.resolution = 'NONE'
+
+```
+
+Subqueries are required to have names, which are added after parentheses **the same way you would add an alias to a normal table**. In this case, we've used the name "sub."
+
+A quick note on formatting: The important thing to remember when using subqueries is to provide some way to for the reader to easily determine which parts of the query will be executed together. Most people do this by indenting the subquery in some way. 
+
+```sql
+-- Write a query that selects all Warrant Arrests from the tutorial.sf_crime_incidents_2014_01 dataset,
+-- then wrap it in an outer query that only displays unresolved incidents.
+
+SELECT sub.*
+FROM (SELECT *
+      FROM tutorial.sf_crime_incidents_2014_01
+      WHERE descript = 'WARRANT ARREST') AS sub
+WHERE sub.resolution != 'NONE'
+```
+
+The above examples, as well as the practice problem don't really require subqueries—they solve problems that could also be solved by adding multiple conditions to the `WHERE` clause. These next sections provide examples for which subqueries are the best or only way to solve their respective problems.
+
+### Using subqueries to aggregate in multiple stages
+
+What if you wanted to figure out how many incidents get reported on each day of the week? Better yet, what if you wanted to know how many incidents happen, on average, on a Friday in December? In January? There are two steps to this process: counting the number of incidents each day (inner query), then determining the monthly average (outer query):
+
+```sql
+SELECT LEFT(sub.date, 2) AS cleaned_month,
+       sub.day_of_week,
+       AVG(sub.incidents) AS average_incidents
+  FROM (
+        SELECT day_of_week,
+               date,
+               COUNT(incidnt_num) AS incidents
+          FROM tutorial.sf_crime_incidents_2014_01
+         GROUP BY 1,2
+       ) sub
+ GROUP BY 1,2
+ ORDER BY 1,2
+
+```
+
+If you're having trouble figuring out what's happening, try running the inner query individually to get a sense of what its results look like. In general, it's easiest to write inner queries first and revise them until the results make sense to you, then to move on to the outer query.
+
+```sql
+-- Write a query that displays the average number of monthly incidents for each category.
+
+SELECT sub.category,
+      AVG(sub.incidents_count) as avg_incidents_month
+  FROM (
+        SELECT LEFT(date, 2) AS cleaned_month,
+                category,
+                COUNT(incidnt_num) as incidents_count
+          FROM tutorial.sf_crime_incidents_2014_01
+        GROUP BY 1,2
+      ) sub
+GROUP BY 1
+```
+
+### Subqueries in conditional logic
+
+You can use **subqueries** in conditional logic (in conjunction with `WHERE`, `JOIN`/`ON`, or `CASE`). The following query returns all of the entries from the earliest date in the dataset.
+
+```sql
+SELECT *
+  FROM tutorial.sf_crime_incidents_2014_01
+ WHERE Date = (SELECT MIN(date)
+                 FROM tutorial.sf_crime_incidents_2014_01
+              )
+
+```
+
+The above query works because the result of the subquery is only one cell. Most conditional logic will work with subqueries containing one-cell results. However, `IN` is the only type of conditional logic that will work when the inner query contains multiple results:
+
+```sql
+SELECT *
+  FROM tutorial.sf_crime_incidents_2014_01
+ WHERE Date IN (SELECT DISTINCT date
+                 FROM tutorial.sf_crime_incidents_2014_01
+                ORDER BY date
+                LIMIT 5
+              )
+
+```
+
+**Note** that you should not include an alias when you write a subquery in a conditional statement. This is because the subquery is treated as an individual value (or set of values in the `IN` case) rather than as a table.
+
+### Joining subqueries
+
+You may remember that you can **filter queries in joins**. It's fairly common to join a subquery that hits the same table as the outer query rather than filtering in the `WHERE` clause. The following query produces the same results as the previous example:
+
+```sql
+SELECT *
+  FROM tutorial.sf_crime_incidents_2014_01 incidents
+  JOIN ( SELECT DISTINCT date
+           FROM tutorial.sf_crime_incidents_2014_01
+          ORDER BY date
+          LIMIT 5
+       ) sub
+    ON incidents.date = sub.date
+
+```
+
+This can be particularly useful when combined with aggregations. When you join, the requirements for your subquery output aren't as stringent as when you use the `WHERE` clause. 
+
+For example, your inner query can output multiple results. The following query ranks all of the results according to how many incidents were reported in a given day. It does this by aggregating the total number of incidents each day in the inner query, then using those values to sort the outer query:
+
+```sql
+SELECT incidents.*,
+       sub.incidents AS incidents_that_day
+  FROM tutorial.sf_crime_incidents_2014_01 incidents
+  JOIN ( SELECT date,
+          COUNT(incidnt_num) AS incidents
+           FROM tutorial.sf_crime_incidents_2014_01
+          GROUP BY 1
+       ) sub
+    ON incidents.date = sub.date
+ ORDER BY sub.incidents DESC, time
+```
+
+```sql
+-- Write a query that displays all rows from the three categories with the fewest incidents reported.
+
+SELECT incidents.*,
+       sub.incidents_count
+  FROM tutorial.sf_crime_incidents_2014_01 incidents
+  JOIN ( SELECT category,
+          COUNT(incidnt_num) AS incidents_count
+           FROM tutorial.sf_crime_incidents_2014_01
+          GROUP BY 1
+          ORDER BY 2 
+          LIMIT 3
+       ) sub
+    ON incidents.category = sub.category
+```
+
+Subqueries can be very helpful in improving the performance of your queries. 
+
+Imagine you'd like to aggregate all of the companies receiving investment and companies acquired each month. You could do that without subqueries if you wanted to, but **don't actually run this as it will take minutes to return**:
+
+```sql
+SELECT COALESCE(acquisitions.acquired_month, investments.funded_month) AS month,
+       COUNT(DISTINCT acquisitions.company_permalink) AS companies_acquired,
+       COUNT(DISTINCT investments.company_permalink) AS investments
+  FROM tutorial.crunchbase_acquisitions acquisitions
+  FULL JOIN tutorial.crunchbase_investments investments
+    ON acquisitions.acquired_month = investments.funded_month
+ GROUP BY 1
+
+```
+
+Note that in order to do this properly, you must join on date fields, which causes a massive "data explosion." Basically, what happens is that you're joining every row in a given month from one table onto every month in a given row on the other table, so the number of rows returned is incredibly great. Because of this multiplicative effect, you must use `COUNT(DISTINCT)` instead of `COUNT` to get accurate counts. You can see this below:
+
+The following query shows 7,414 rows:
+
+```sql
+SELECT COUNT(*) FROM tutorial.crunchbase_acquisitions
+
+```
+
+The following query shows 83,893 rows:
+
+```sql
+SELECT COUNT(*) FROM tutorial.crunchbase_investments
+
+```
+
+The following query shows 6,237,396 rows:
+
+```sql
+    SELECT COUNT(*)
+      FROM tutorial.crunchbase_acquisitions acquisitions
+      FULL JOIN tutorial.crunchbase_investments investments
+        ON acquisitions.acquired_month = investments.funded_month
+
+```
+
+If you'd like to understand this a little better, you can do some extra research on **[cartesian products](http://en.wikipedia.org/wiki/Cartesian_product)**. It's also worth noting that the `FULL JOIN` and `COUNT` above actually runs pretty fast—it's the `COUNT(DISTINCT)` that takes forever. 
+
+Of course, you could solve this much more efficiently by aggregating the two tables separately, then joining them together so that the counts are performed across far smaller datasets:
+
+```sql
+SELECT COALESCE(acquisitions.month, investments.month) AS month,
+       acquisitions.companies_acquired,
+       investments.companies_rec_investment
+  FROM (
+        SELECT acquired_month AS month,
+               COUNT(DISTINCT company_permalink) AS companies_acquired
+          FROM tutorial.crunchbase_acquisitions
+         GROUP BY 1
+       ) acquisitions
+
+  FULL JOIN (
+        SELECT funded_month AS month,
+               COUNT(DISTINCT company_permalink) AS companies_rec_investment
+          FROM tutorial.crunchbase_investments
+         GROUP BY 1
+       )investments
+
+    ON acquisitions.month = investments.month
+ ORDER BY 1 DESC
+
+```
+
+Note: We used a `FULL JOIN` above just in case one table had observations in a month that the other table didn't. We also used `COALESCE` to display months when the `acquisitions` subquery didn't have month entries (presumably no acquisitions occurred in those months). 
+
+```sql
+-- Write a query that counts the number of companies founded and acquired by quarter starting in Q1 2012. 
+-- Create the aggregations in two separate queries, then join them.
+
+SELECT COALESCE(acquisitions.acquired_quarter, investments.funded_quarter) AS quarter,
+       acquisitions.companies_acquired,
+       investments.companies_rec_investment
+  FROM (
+        SELECT acquired_quarter,
+               COUNT(DISTINCT company_permalink) AS companies_acquired
+          FROM tutorial.crunchbase_acquisitions
+          WHERE acquired_quarter >= '2012-Q1'
+         GROUP BY 1
+         
+       ) acquisitions
+
+  FULL JOIN (
+        SELECT funded_quarter,
+               COUNT(DISTINCT company_permalink) AS companies_rec_investment
+          FROM tutorial.crunchbase_investments
+          WHERE funded_quarter >= '2012-Q1'
+         GROUP BY 1
+       )investments
+
+    ON acquisitions.acquired_quarter = investments.funded_quarter
+ ORDER BY 1 DESC
+```
+
+## Subqueries and UNIONs
+
+```sql
+SELECT *
+  FROM tutorial.crunchbase_investments_part1
+
+ UNION ALL
+
+ SELECT *
+   FROM tutorial.crunchbase_investments_part2
+
+```
+
+It's certainly not uncommon for a dataset to come split into several parts, especially if the data passed through Excel at any point (Excel can only handle ~1M rows per spreadsheet). The two tables used above can be thought of as different parts of the same dataset—what you'd almost certainly like to do is perform operations on the entire combined dataset rather than on the individual parts. You can do this by using a subquery:
+
+```sql
+SELECT COUNT(*) AS total_rows
+  FROM (
+        SELECT *
+          FROM tutorial.crunchbase_investments_part1
+
+         UNION ALL
+
+        SELECT *
+          FROM tutorial.crunchbase_investments_part2
+       ) sub
+
+-- result 83898 rows same as above
+```
+
+```sql
+-- Write a query that ranks investors from the combined dataset above by the total number of investments they have made.
+
+SELECT investor_name,
+        COUNT(investor_name) AS no_investments
+  FROM (
+        SELECT *
+          FROM tutorial.crunchbase_investments_part1
+
+         UNION ALL
+
+        SELECT *
+          FROM tutorial.crunchbase_investments_part2
+       ) sub
+  GROUP BY 1
+  ORDER by 2 DESC
+```
+
+```sql
+-- Write a query that does the same thing as in the previous problem, except only for companies that are still operating. 
+-- Hint: operating status is in tutorial.crunchbase_companies.
+
+SELECT investments.investor_name,
+        COUNT(investments.investor_name) AS no_investments
+  FROM (
+        SELECT *
+          FROM tutorial.crunchbase_investments_part1
+
+         UNION ALL
+
+        SELECT *
+          FROM tutorial.crunchbase_investments_part2
+       ) investments
+  INNER JOIN tutorial.crunchbase_companies companies
+  ON investments.company_permalink = companies.permalink 
+  AND companies.status = 'operating'
+  GROUP BY 1
+  ORDER by 2 DESC
+```
 
 ## SQL Window Functions
 
