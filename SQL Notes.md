@@ -1170,3 +1170,338 @@ SELECT DISTINCT japan_investments.company_name,
 ```
 
 Note how the same table can easily be referenced multiple times using different aliases—in this case, `japan_investments` and `gb_investments`.
+
+## **SQL Data Types**
+
+In previous lessons, you learned that certain functions work on some data types, but not others. For example, `Count` works with any data type, but `SUM` only works for numerical data. 
+
+This is actually more complicated than it appears: in order to use `SUM`, the data must appear to be numeric, but it must also be **stored in the database** in a numeric form.
+
+You might run into this, for example, if you have a column that appears to be entirely numeric, but happens to contain spaces or commas.
+
+Generally, numeric column types in various SQL databases *do not* support commas or currency symbols. To make things more complicated, SQL databases can store data in many different formats with different levels of precision.
+
+The `INTEGER` data type, for example, only stores whole numbers—no decimals. The `DOUBLE PRECISION` data type, on the other hand, can store between 15 and 17 significant decimal digits. 
+
+The complete list of Data Types in SQL, **[click here](https://www.w3schools.com/sql/sql_datatypes_general.asp)**.
+
+### Changing a column's data type
+
+It's certainly best for data to be stored in its optimal format from the beginning, but if it isn't, you can always change it in your query. It's particularly common for dates or numbers, for example, to be stored as strings. This becomes problematic when you want to sum a column and you get an error because SQL is reading numbers as strings. When this happens, you can use `CAST` or `CONVERT` to change the data type to a numeric one that will allow you to perform the sum.
+
+You can actually achieve this with two different type of syntax. For example, `CAST(column_name AS integer)` and `column_name::integer` produce the same result.
+
+You could replace `integer` with any other data type that would make sense for that column—all values in a given column must fit with the new data types.
+
+```sql
+-- Convert the funding_total_usd and founded_at_clean columns in the tutorial.crunchbase_companies_clean_date table
+-- to strings (varchar format) using a different formatting function for each one.
+
+SELECT CAST(funding_total_usd AS varchar) AS funding_total_usd_string,
+       founded_at_clean::varchar AS founded_at_string
+  FROM tutorial.crunchbase_companies_clean_date
+```
+
+## SQL Date Format
+
+### Why dates are formatted year-first
+
+Both MM-DD-YYYY and DD-MM-YYYY are bad formats. The problem with both of these formats is that when they are stored as strings, they don't sort in chronological order. 
+
+For example, here's a date field stored as a string. Because the month is listed first, the `ORDER BY` statement doesn't produce a chronological list:
+
+```sql
+SELECT permalink,
+       founded_at
+  FROM tutorial.crunchbase_companies_clean_date
+ ORDER BY founded_at
+
+```
+
+You might think that converting these values from `string` to `date` might solve the problem, but it's actually not quite so simple. most relational databases format dates as YYYY-MM-DD, a format that makes a lot of sense because it will sort in the same order whether it's stored as a date or as a string. 
+
+Here's an example from the same table, but with a field that has a cleaned date. Note that the cleaned date field is actually stored as a string, but still sorts in chronological order anyway:
+
+```sql
+SELECT permalink,
+       founded_at,
+       founded_at_clean
+  FROM tutorial.crunchbase_companies_clean_date
+ ORDER BY founded_at_clean
+
+```
+
+### Crazy rules for dates and times
+
+Assuming you've got some dates properly stored as a `date` or `time` data type, you can do some pretty powerful things. Maybe you'd like to calculate a field of dates a week after an existing field. Or maybe you'd like to create a field that indicates how many days apart the values in two other date fields are. These are trivially simple, but it's important to keep in mind that the data type of your results will depend on exactly what you are doing to the dates.
+
+When you perform arithmetic on dates (such as subtracting one date from another), the results are often stored as the `interval` data type—a series of integers that represent a period of time. 
+
+The following query uses date subtraction to determine how long it took companies to be acquired. Note that because the `companies.founded_at_clean` column is stored as a string, it must be cast as a timestamp before it can be subtracted from another timestamp.
+
+```sql
+SELECT companies.permalink,
+       companies.founded_at_clean,
+       acquisitions.acquired_at_cleaned,
+       acquisitions.acquired_at_cleaned -
+         companies.founded_at_clean::timestamp AS time_to_acquisition
+  FROM tutorial.crunchbase_companies_clean_date companies
+  JOIN tutorial.crunchbase_acquisitions_clean_date acquisitions
+    ON acquisitions.company_permalink = companies.permalink
+ WHERE founded_at_clean IS NOT NULL
+
+```
+
+In the example above, you can see that the `time_to_acquisition` column is an interval, not another date.
+
+You can introduce intervals using the `INTERVAL` function as well:
+
+```sql
+SELECT companies.permalink,
+       companies.founded_at_clean,
+       companies.founded_at_clean::timestamp +
+         INTERVAL '1 week' AS plus_one_week
+  FROM tutorial.crunchbase_companies_clean_date companies
+ WHERE founded_at_clean IS NOT NULL
+
+```
+
+The interval is defined using plain-English terms like '10 seconds' or '5 months'. Also note that adding or subtracting a `date` column and an `interval` column results in another `date` column as in the above query.
+
+You can add the current time (at the time you run the query) into your code using the `NOW()`function:
+
+```sql
+SELECT companies.permalink,
+       companies.founded_at_clean,
+       NOW() - companies.founded_at_clean::timestamp AS founded_time_ago
+  FROM tutorial.crunchbase_companies_clean_date companies
+ WHERE founded_at_clean IS NOT NULL
+```
+
+## SQL Date Functions
+
+**The most frequently used date functions and business scenarios where they come in handy:**
+
+- Rounding off timestamps with `DATE_TRUNC` function
+- Finding events relative to the present time with `NOW()` and `CURRENT_DATE` functions
+- Isolating hour-of-day and day-of-week with `EXTRACT` function
+- Calculating time elapsed with `AGE` function
+
+### **Rounding off timestamps with `DATE_TRUNC` function**
+
+The `DATE_TRUNC` function rounds a timestamp value to a specified interval, which allows you to count events. You can round off a timestamp to the following units of time:
+
+- microsecond
+- millisecond
+- second
+- minute
+- hour
+- day
+- week
+- month
+- quarter
+- year
+- decade
+- century
+- millennium
+
+The `DATE_TRUNC` syntax looks like this: `DATE_TRUNC('interval',timestamp)`.
+
+For example, `SELECT DATE_TRUNC('day','2015-04-12 14:44:18')` would return a result of `2015-04-12 00:00:00`.
+
+**Example: How has web traffic changed over time?**
+
+Try `DATE_TRUNC` for yourself by querying this table, which contains sample records of website visits, including an `occurred_at` column. You can isolate the month of the visit with `DATE_TRUNC`.
+
+```sql
+SELECT DATE_TRUNC('month',occurred_at) AS month
+  FROM demo.web_events
+ WHERE occurred_at BETWEEN '2015-01-01' AND '2015-12-31 23:59:59'
+```
+
+To return a count of web visits each month by channel, add the `channel` column and a `COUNT` to the `SELECT` statement, then group by `month` and `channel`. (Since month and channel are the first two values in your `SELECT` statement, you can `GROUP BY 1,2`), like this:
+
+```sql
+SELECT DATE_TRUNC('month',occurred_at) AS month,
+       channel,
+       COUNT(id) AS visits
+  FROM demo.web_events
+ WHERE occurred_at BETWEEN '2015-01-01' AND '2015-12-31 23:59:59'
+ GROUP BY 1,2
+```
+
+Finally, use `ORDER BY 1,2` to organize your results chronologically (by month) and alphabetically (by channel).
+
+```sql
+SELECT DATE_TRUNC('month',occurred_at) AS month,
+       channel,
+       COUNT(id) AS visits
+  FROM demo.web_events
+ WHERE occurred_at BETWEEN '2015-01-01' AND '2015-12-31 23:59:59'
+ GROUP BY 1,2
+ ORDER BY 1,2
+```
+
+### **Finding events relative to the present time with `NOW()` and `CURRENT_DATE` functions**
+
+The `NOW()` date function returns the current timestamp in UTC (if the time zone is unspecified). You can subtract intervals from `NOW()` to pull events that happened within the last hour, the last day, the last week, etc.
+
+Running `SELECT NOW()` at 9:00am UTC on October 11th, 2016 would result in `2016-10-11 09:00:00`.
+
+The `CURRENT_DATE` function only returns the current date, not the whole timestamp. Running `SELECT CURRENT_DATE` at 9:00am UTC on October 11th, 2016 would return `2016-10-11`.
+
+**Example: What orders were placed in the last 7 years?**
+
+To find orders placed in the last 7 years, use a `WHERE` clause to return only orders that were placed after or exactly at (`>=`) the current timestamp (`NOW()`) minus an interval of 7 years.
+
+```sql
+SELECT *
+  FROM demo.orders
+ WHERE occurred_at >= NOW() - interval '7 year'
+```
+
+In addition to `year`, you can use any of the following intervals:
+
+- microseconds
+- milliseconds
+- second
+- minute
+- hour
+- day
+- week
+- month
+- year
+- decade
+- century
+- millennium
+
+You can also combine different intervals in the same expression like this:
+`interval '4 hours 3 minutes'`
+
+**Example: What orders were placed this day a 7 years ago?**
+
+You can use the same table to find orders placed on this day seven year ago by combining the `DATE_TRUNC` and `CURRENT_DATE` functions.
+
+Start by using a `DATE_TRUNC` function to round your `occurred_at` values by day (since we want to know if something happened this *day*). Then use a `WHERE` clause to return only values where the `occurred_at` day is equal to the current date (using the `CURRENT_DATE` function) minus an interval of 7 years.
+
+```sql
+SELECT *
+  FROM demo.orders
+ WHERE DATE_TRUNC('day',occurred_at) = CURRENT_DATE - interval '7 year'
+```
+
+### Isolating hour-of-day and day-of-week with EXTRACT
+
+The `EXTRACT` date function allows you to isolate subfields such as year or hour from timestamps. Essentially it allows you to extract parts of a date from a datetime expression.
+
+Here's the syntax: `EXTRACT(subfield FROM timestamp)`. Running `EXTRACT(month FROM '2015-02-12')` would return a result of `2`.
+
+**Example: How many orders are placed each hour of the day?**
+
+A company running a fulfillment center might want to staff more employees when the bulk of orders comes in. To figure out when orders are placed throughout the day, you can use the `EXTRACT` function and the `hour` subfield to isolate the hour-of-day (from 0 to 23) in which an order occurred.
+
+Use the `COUNT` function to tally orders, and then ****`GROUP BY` hour. (Since hour is the first value in your `SELECT` statement, you can `GROUP BY 1`).
+
+Finally, to organize your results sequentially, use `ORDER BY 1`.
+
+```sql
+SELECT EXTRACT(hour from occurred_at) AS hour,
+       COUNT(*) AS orders
+  FROM demo.orders
+ GROUP BY 1
+ ORDER BY 1
+```
+
+**Example: What's the average weekday order volume?**
+
+To determine the average volume of orders that occurred by weekday, use `EXTRACT` and the `dow` (day of the week) subfield to isolate the day-of-week (from 0-6, where 0 is Sunday) in which an order occurred.
+
+Next, round the order timestamps by day with `DATE_TRUNC`. Taking a `COUNT` of orders grouped by `dow` and `day` will return the number of orders placed each day along with the corresponding day-of-week.
+
+To find the average weekday order volume, use the previous query as a **subquery** (aliased as `a`). Take the average of orders (using the `AVG()` function), and then use a `WHERE` clause to filter out Saturdays and Sundays.
+
+```sql
+SELECT AVG(orders) AS avg_orders_weekday
+  FROM (
+SELECT EXTRACT(dow from occurred_at) AS dow,
+       DATE_TRUNC('day',occurred_at) AS day,
+       COUNT(id) AS orders
+  FROM demo.orders
+ GROUP BY 1,2) a
+ WHERE dow NOT IN (0,6)
+```
+
+### Calculating time elapsed with AGE
+
+The `AGE` date function calculates how long ago an event occurred. It returns a value representing the number of years, months, and days an event happened or the difference between two given arguments.
+
+The syntax is pretty straightforward: apply `AGE()` to a single timestamp, and your query will return the amount of time since that event took place. Running `SELECT AGE( '2010-01-01' )` on January 1st, 2011 would return a result of `1 years 0 months 0 days`.
+
+`AGE()` can also determine how much time passed between two events. Instead of putting a single timestamp inside the parentheses, insert both timestamps (starting with the most recent timestamp) and separate them with a comma. Running `SELECT AGE( '2012-12-01','2010-01-01')` would return `2 years 11 months 0 days`.
+
+Note that this application of the `AGE` function is equivalent to subtracting the timestamps: `SELECT '2012-12-01' - '2010-01-01'`.
+
+**Example: How old is a customer account?**
+
+Suppose your sales team wants to personalize greetings based on how long the customer has been using your product. You can find how much time has elapsed since account creation using the `AGE` function.
+
+Select the column of account names `name` and apply the `AGE()` function to the column of timestamps showing when each account was created `created`.
+
+```sql
+SELECT name,
+       AGE(created) AS account_age
+  FROM modeanalytics.customer_accounts
+```
+
+**Example: How long does it take users to complete their profile each month, on average?**
+
+To find the average time to complete a profile each month, start by finding the time it took each user to complete a profile as well as the month in which the profile creation process was started. First, round the `started_at` timestamp by month, using the `DATE_TRUNC` function. Next, find the time elapsed from `started_at` to `ended_at` for each profile using the `AGE` function.
+
+Find the average for each month by applying the `AVG` function to the elapsed time value (your `AGE` statement) and grouping by month.
+
+```sql
+SELECT DATE_TRUNC('month',started_at) AS month,
+       AVG(AGE(ended_at,started_at)) AS avg_time_to_complete
+  FROM modeanalytics.profile_creation_events
+ GROUP BY 1
+ ORDER BY 1
+```
+
+To return values in a consistent unit for charting, apply the `EXTRACT` function and `EPOCH` subfield to your values to return results as a count of seconds.
+
+```sql
+SELECT DATE_TRUNC('month',started_at) AS month,
+       EXTRACT(EPOCH FROM AVG(AGE(ended_at,started_at))) AS avg_seconds
+  FROM modeanalytics.profile_creation_events
+ GROUP BY 1
+ ORDER BY 1
+```
+
+```sql
+-- Write a query that counts the number of companies acquired within 3 years, 5 years, and 10 years of being founded (in 3 separate columns). 
+-- Include a column for total companies acquired as well. Group by category and limit to only rows with a founding date.
+
+SELECT companies.category_code as category,
+       COUNT(CASE WHEN AGE(acquisitions.acquired_at_cleaned::TIMESTAMP, companies.founded_at_clean::TIMESTAMP) <= INTERVAL '3 year' THEN 1 END) as acquired_3year,
+       COUNT(CASE WHEN AGE(acquisitions.acquired_at_cleaned::TIMESTAMP, companies.founded_at_clean::TIMESTAMP) <= INTERVAL '5 year' THEN 1 END) as acquired_5year,
+       COUNT(CASE WHEN AGE(acquisitions.acquired_at_cleaned::TIMESTAMP, companies.founded_at_clean::TIMESTAMP) <= INTERVAL '10 year' THEN 1 END) as acquired_10year,
+       COUNT(acquisitions.acquired_at_cleaned) as no_companies_acquired
+  FROM tutorial.crunchbase_companies_clean_date companies
+  JOIN tutorial.crunchbase_acquisitions_clean_date acquisitions
+    ON acquisitions.company_permalink = companies.permalink
+    AND companies.founded_at_clean IS NOT NULL
+GROUP BY category
+ORDER BY no_companies_acquired DESC
+```
+
+## Data Wrangling with SQL
+
+## Using SQL String Functions to Clean Data
+
+## Writing Subqueries in SQL
+
+## SQL Window Functions
+
+## Performance Tuning SQL Queries
+
+## Pivoting Data in SQL
