@@ -813,7 +813,7 @@ ON teams.school_name = players.school_name
 
 Inner joins, which can be written as either `JOIN DB2` or `INNER JOIN DB2` Inner joins eliminate rows from both tables that do not satisfy the join condition set forth in the `ON` statement. In mathematical terms, an inner join is the *intersection* of the two tables.
 
-![Untitled](Images/Untitled.png)
+![Untitled](Images/SQL%20Notes/Untitled.png)
 
 ### Joining tables with identical column names
 
@@ -860,11 +860,11 @@ Outer joins are joins that return matched values **and** unmatched values from
 
 When performing an **inner join**, rows from either table that are unmatched in the other table are not returned. In an outer join, unmatched rows in one or both tables can be returned.
 
-![Untitled](Images/Untitled%201.png)
+![Untitled](Images/SQL%20Notes/Untitled%201.png)
 
 ## SQL LEFT JOIN
 
-![Untitled](Images/Untitled%202.png)
+![Untitled](Images/SQL%20Notes/Untitled%202.png)
 
 `LEFT JOIN` command tells the database to return all rows in the table in the `FROM` clause, regardless of whether or not they have matches in the table in the `LEFT JOIN` clause.
 
@@ -908,7 +908,7 @@ LEFT JOIN tutorial.crunchbase_acquisitions acquisitions
 
 Right joins are similar to left joins except they return all rows from the table in the `RIGHT JOIN` clause and only matching rows from the table in the `FROM` clause.
 
-![Untitled](Images/Untitled%203.png)
+![Untitled](Images/SQL%20Notes/Untitled%203.png)
 
 `RIGHT JOIN` is rarely used because you can achieve the results of a `RIGHT JOIN` by simply switching the two joined table names in a `LEFT JOIN`.
 
@@ -933,7 +933,7 @@ RIGHT JOIN tutorial.crunchbase_companies companies
 
 ## SQL JOINS Using WHERE or ON
 
-## Filtering in the ON clause
+### Filtering in the ON clause
 
 Normally, filtering is processed in the **`WHERE`** clause once the **two tables have already been joined**. It's possible, though that you might want to filter one or both of the tables *before* joining them. For example, you only want to create matches between the tables under certain circumstances.
 
@@ -951,7 +951,7 @@ SELECT companies.permalink AS companies_permalink,
 
 What's happening above is that the conditional statement `AND...` is evaluated before the join occurs. You can think of it as a `WHERE` clause that only applies to one of the tables. You can tell that this is only happening in one of the tables because the 1000memories permalink is still displayed in the column that pulls from the other table:
 
-![Untitled](Images/Untitled%204.png)
+![Untitled](Images/SQL%20Notes/Untitled%204.png)
 
 ### Filtering in the WHERE clause
 
@@ -973,7 +973,7 @@ SELECT companies.permalink AS companies_permalink,
 
 You can see that the 1000memories line is not returned (it would have been between the two highlighted lines below). Also note that filtering in the `WHERE` clause can also filter null values, so we added an extra line to make sure to include the nulls.
 
-![Untitled](Images/Untitled%205.png)
+![Untitled](Images/SQL%20Notes/Untitled%205.png)
 
 ```sql
 -- Write a query that shows a company's name, "status" (found in the Companies table), and the number of unique investors in that company.
@@ -1070,6 +1070,7 @@ WHERE company_name ILIKE 'T%'
    FROM tutorial.crunchbase_investments_part2
    WHERE company_name ILIKE '%M'
 ```
+
 ```sql
 -- Write a query that shows 3 columns. The first indicates which dataset (part 1 or 2) the data comes from, 
 -- the second shows company status, and the third is a count of the number of investors.
@@ -1496,7 +1497,6 @@ ORDER BY no_companies_acquired DESC
 
 ## Data Wrangling with SQL
 
-
 **Data wrangling** (or munging) is the process of programmatically transforming data into a format that makes it easier to work with. This might mean modifying all of the values in a given column in a certain way, or merging multiple columns together. The necessity for data wrangling is often a biproduct of poorly collected or presented data. 
 
 Data that is entered manually by humans is typically fraught with errors; data collected from websites is often optimized to be displayed on websites, not to be sorted and aggregated.
@@ -1805,7 +1805,7 @@ SELECT incidnt_num,
 
 ## Writing Subqueries in SQL
 
-## Subquery basics
+### Subquery basics
 
 **Subqueries** (also known as inner queries or nested queries) are a tool for performing operations in multiple steps. 
 
@@ -2075,7 +2075,7 @@ SELECT COALESCE(acquisitions.acquired_quarter, investments.funded_quarter) AS qu
  ORDER BY 1 DESC
 ```
 
-## Subqueries and UNIONs
+### Subqueries and UNIONs
 
 ```sql
 SELECT *
@@ -2486,14 +2486,408 @@ WINDOW ntile_window AS
 
 The `WINDOW` clause, if included, should always come after the `WHERE` clause.
 
-## Advanced windowing techniques
+### Advanced windowing techniques
 
 You can check out a complete list of window functions in Postgres (the syntax Mode uses) in the **[Postgres documentation](http://www.postgresql.org/docs/8.4/static/functions-window.html)**. If you're using window functions on a **[connected database](https://mode.com/help/articles/connecting-mode-to-your-database/)**, you should look at the appropriate syntax guide for your system.
 
 If you're interested, we rounded up the **[top five most popular window functions](https://mode.com/blog/most-popular-window-functions-and-how-to-use-them/?utm_medium=referral&utm_source=mode-site&utm_campaign=sql-tutorial)** and expand on the commonalities of **[window functions in Python and SQL](https://mode.com/blog/bridge-the-gap-window-functions/?utm_medium=referral&utm_source=mode-site&utm_campaign=sql-tutorial)**.
 
-[Common Table Expressions (CTE) to Keep Your SQL Clean](https://mode.com/blog/use-common-table-expressions-to-keep-your-sql-clean)
+## Common Table Expressions(CTE)
+
+Common table expressions are temporary named result sets that exist for just one query. They begin with a `WITH` , followed by an expression name and a query which defines the result set.
+
+Using this convention, you can define multiple expressions within a query. Once defined, these expressions can be referenced repeatedly throughout the rest of your query (just like you’d refer to permanent database tables or views).
+
+While common table expressions operate similarly to subqueries, they have several benefits including:
+
+- The ability to reference the same temporary result set repeatedly across the query
+- Improved readability for collaboration and debugging
+- Better visibility into commonly used result sets that are good candidates to become permanent tables/views
+
+Suppose you work for a paper company and you want to reach out to large customers that have had poor shipping experiences. After talking with the sales team, you decide to define “large customers” as any account with $100k or more in lifetime revenue, and you define poor shipping experiences as any account that has had multiple orders with failed shipments.
+
+A streamlined approach for identifying accounts that meet both of these criteria is to use a common table expression, as in this example.
+
+```sql
+	  WITH
+	
+	  account_failed_shipments as (
+	    SELECT a.id as account_id,
+	           COUNT(1) as failed_shipments
+	      FROM demo.orders__fulfillments f
+	      JOIN demo.orders o
+	        ON o.id = f.order_id
+	      JOIN demo.accounts a
+	        ON a.id = o.account_id
+	     WHERE f.shipment_status = 'failure'
+	     GROUP BY 1
+	  ),
+	
+	  account_lifetime_revenue as (
+	    SELECT o.account_id,
+	           SUM(o.total_amt_usd) as amount
+	      FROM demo.orders o
+	     GROUP BY 1
+	  )
+	
+	    SELECT r.name as region,
+	           sr.name as sales_rep,
+	           a.name as account_name,
+	           alr.amount as lifetime_revenue,
+	           afs.failed_shipments
+	      FROM demo.accounts a
+	      JOIN demo.sales_reps sr
+	        ON sr.id = a.sales_rep_id
+	      JOIN demo.region r
+	        ON r.id = sr.region_id
+	      JOIN account_failed_shipments afs
+	        ON afs.account_id = a.id
+	       AND afs.failed_shipments > 1
+	      JOIN account_lifetime_revenue alr
+	        ON alr.account_id = a.id
+	       AND alr.amount >= 100000
+	     ORDER BY 1,2
+
+```
+
+**Breaking it down**
+
+- **WITH**: A `[WITH](https://www.postgresql.org/docs/9.1/queries-with.html)` is necessary to kick off your common table expression query.
+
+```
+  WITH
+
+```
+
+- **Expression 1:** `account_failed_shipments`. Our first expression returns the count of failed shipments for all accounts that have had at least one. Syntactically, we begin by naming the expression in the format `expression_name as (`. We’ll now be able to reference this name as though it was a table in our database throughout the remainder of the query. What follows is a typical query, which, in this example, is grouping failed shipments by account. Finally, we conclude the expression with a closed parenthesis. Note that since this is not the last expression in our query, the closed parenthesis is followed by a comma.
+
+```sql
+  account_failed_shipments as (
+    SELECT a.id as account_id,
+           COUNT(1) as failed_shipments
+      FROM demo.orders__fulfillments f
+      JOIN demo.orders o
+        ON o.id = f.order_id
+      JOIN demo.accounts a
+        ON a.id = o.account_id
+     WHERE f.shipment_status = 'failure'
+     GROUP BY 1
+  ),
+
+```
+
+- **Expression 2:** `account_lifetime_revenue`. Our second expression returns the total sum of revenue by account. It is identical in structure to Expression 1, with one exception— since it is the final expression in our query, the closed parenthesis is *not* followed by a comma.
+
+```sql
+  account_lifetime_revenue as (
+    SELECT o.account_id,
+           SUM(o.total_amt_usd) as amount
+      FROM demo.orders o
+     GROUP BY 1
+  )
+
+```
+
+- **Final query:** Lastly, we have the final query itself that will return our result set. This should look quite similar to any traditional query, with the exception of the final two JOINs that reference expressions we’ve previously defined, as opposed to tables in our database.
+
+```sql
+    SELECT r.name as region,
+           sr.name as sales_rep,
+           a.name as account_name,
+           alr.amount as lifetime_revenue,
+           afs.failed_shipments
+      FROM demo.accounts a
+      JOIN demo.sales_reps sr
+        ON sr.id = a.sales_rep_id
+      JOIN demo.region r
+        ON r.id = sr.region_id
+      JOIN account_failed_shipments afs
+        ON afs.account_id = a.id
+       AND afs.failed_shipments > 1
+      JOIN account_lifetime_revenue alr
+        ON alr.account_id = a.id
+       AND alr.amount >= 100000
+     ORDER BY 1,2
+
+```
 
 ## Performance Tuning SQL Queries
 
+SQL tuning is the process of improving SQL queries to accelerate your servers performance. It's general purpose is to reduce the amount of time it takes a user to receive a result after issuing a query, and to reduce the amount of resources used to process a query. 
+
+### The theory behind query run time
+
+A database is a piece of software that runs on a computer, and is subject to the same limitations as all software—it can only process as much information as its hardware is capable of handling. The way to make a query run faster is to reduce the number of calculations that the software (and therefore hardware) must perform. To do this, you'll need some understanding of how SQL actually makes calculations. First, let's address some of the high-level things that will affect the number of calculations you need to make, and therefore your querys runtime:
+
+- **Table size:** If your query hits one or more tables with millions of rows or more, it could affect performance.
+- **Joins:** If your query joins two tables in a way that substantially increases the row count of the result set, your query is likely to be slow.
+- **Aggregations:** Combining multiple rows to produce a result requires more computation than simply retrieving those rows.
+
+Query runtime is also dependent on some things that you can't really control related to the database itself:
+
+- **Other users running queries:** The more queries running concurrently on a database, the more the database must process at a given time and the slower everything will run. It can be especially bad if others are running particularly resource-intensive queries that fulfill some of the above criteria.
+- **Database software and optimization:** This is something you probably can't control, but if you know the system you're using, you can work within its bounds to make your queries more efficient.
+
+For now, let's ignore the things you can't control and work on the things you can.
+
+### Reducing table size
+
+Filtering the data to include only the observations you need can dramatically improve query speed. How you do this will depend entirely on the problem you're trying to solve. For example, if you've got time series data, limiting to a small time window can make your queries run much more quickly:
+
+```sql
+SELECT *
+  FROM benn.sample_event_table
+ WHERE event_date >= '2014-03-01'
+   AND event_date <  '2014-04-01'
+
+```
+
+Keep in mind that you can always perform exploratory analysis on a subset of data, refine your work into a final query, then remove the limitation and run your work across the entire dataset. The final query might take a long time to run, but at least you can run the intermediate steps quickly. 
+
+Like using **`LIMIT`** clause —100 rows is often more than you need to determine the next step in your analysis, and it's a small enough dataset that it will return quickly.
+
+It's worth noting that `LIMIT` doesn't quite work the same way with aggregations—the aggregation is performed, then the results are limited to the specified number of rows. So if you're aggregating into one row as below, `LIMIT 100` will do nothing to speed up your query:
+
+```sql
+SELECT COUNT(*)
+  FROM benn.sample_event_table
+ LIMIT 100
+
+```
+
+If you want to limit the dataset before performing the count (to speed things up), try doing it in a subquery:
+
+```sql
+SELECT COUNT(*)
+  FROM (
+    SELECT *
+      FROM benn.sample_event_table
+     LIMIT 100
+       ) sub
+
+```
+
+Note: Using `LIMIT` this will dramatically alter your results, so you should use it to test query logic, but not to get actual results.
+
+In general, when working with **subqueries**, you should make sure to limit the amount of data you're working with in the place where it will be executed first. This means putting the `LIMIT` in the subquery, not the outer query. Again, this is for making the query run fast so that you can test—*NOT* for producing good results.
+
+### Making joins less complicated
+
+In a way, this is an extension of the previous tip. In the same way that it's better to reduce data at a point in the query that is executed early, it's better to reduce table sizes before joining them. Take this example, which joins information about college sports teams onto a list of players at various colleges:
+
+```sql
+SELECT teams.conference AS conference,
+       players.school_name,
+       COUNT(1) AS players
+  FROM benn.college_football_players players
+  JOIN benn.college_football_teams teams
+    ON teams.school_name = players.school_name
+ GROUP BY 1,2
+
+```
+
+There are 26,298 rows in `benn.college_football_players`. That means that 26,298 rows need to be evaluated for matches in the other table. But if the `benn.college_football_players` table was pre-aggregated, you could reduce the number of rows that need to be evaluated in the join. First, let's look at the aggregation:
+
+```sql
+SELECT players.school_name,
+       COUNT(*) AS players
+  FROM benn.college_football_players players
+ GROUP BY 1
+
+```
+
+The above query returns 252 results. So dropping that in a subquery and then joining to it in the outer query will reduce the cost of the join substantially:
+
+```sql
+SELECT teams.conference,
+       sub.*
+  FROM (
+        SELECT players.school_name,
+               COUNT(*) AS players
+          FROM benn.college_football_players players
+         GROUP BY 1
+       ) sub
+  JOIN benn.college_football_teams teams
+  ON teams.school_name = sub.school_name
+
+```
+
+In this particular case, you won't notice a huge difference because 30,000 rows isn't too hard for the database to process. But if you were talking about hundreds of thousands of rows or more, you'd see a noticeable improvement by aggregating before joining. When you do this, make sure that what you're doing is logically consistent—you should worry about the accuracy of your work before worrying about run speed.
+
+### EXPLAIN
+
+You can add `EXPLAIN` at the beginning of any (working) query to get a sense of how long it will take. It's not perfectly accurate, but it's a useful tool. Try running this:
+
+```sql
+EXPLAIN
+SELECT *
+  FROM benn.sample_event_table
+ WHERE event_date >= '2014-03-01'
+   AND event_date < '2014-04-01'
+ LIMIT 100
+
+```
+
+You'll get this output. It's called the Query Plan, and it shows the order in which your query will be executed:
+
+![Untitled](Images/SQL%20Notes/Untitled%206.png)
+
+The entry at the bottom of the list is executed first. So this shows that the `WHERE` clause, which limits the date range, will be executed first. Then, the database will scan 600 rows (this is an approximate number). You can see the cost listed next to the number of rows—higher numbers mean longer run time. You should use this more as a reference than as an absolute measure. To clarify, this is most useful if you run `EXPLAIN` on a query, modify the steps that are expensive, then run `EXPLAIN` again to see if the cost is reduced. Finally, the `LIMIT` clause is executed last and is really cheap to run (24.65 vs 147.87 for the `WHERE` clause).
+
+For more detail, check out the **[Postgres Documentation](http://www.postgresql.org/docs/9.0/static/sql-explain.html)**.
+
 ## Pivoting Data in SQL
+
+### Pivoting rows to columns
+
+This lesson will teach you how to take data that is formatted for analysis and pivot it for presentation or charting. We'll take a dataset that looks like this:
+
+![https://mode.com/resources/images/common-problems/pivot-step-one.png](https://mode.com/resources/images/common-problems/pivot-step-one.png)
+
+And make it look like this:
+
+![https://mode.com/resources/images/common-problems/finished-pivot.png](https://mode.com/resources/images/common-problems/finished-pivot.png)
+
+Let's start by aggregating the data to show the number of players of each year in each conference:
+
+```sql
+SELECT teams.conference AS conference,
+       players.year,
+       COUNT(1) AS players
+  FROM benn.college_football_players players
+  JOIN benn.college_football_teams teams
+    ON teams.school_name = players.school_name
+ GROUP BY 1,2
+ ORDER BY 1,2
+
+```
+
+In order to transform the data, we'll need to put the above query into a subquery. It can be helpful to create the subquery and select all columns from it before starting to make transformations. Re-running the query at incremental steps like this makes it easier to debug if your query doesn't run. Note that you can eliminate the `ORDER BY` clause from the subquery since we'll reorder the results in the outer query.
+
+```sql
+SELECT *
+  FROM (
+        SELECT teams.conference AS conference,
+               players.year,
+               COUNT(1) AS players
+          FROM benn.college_football_players players
+          JOIN benn.college_football_teams teams
+            ON teams.school_name = players.school_name
+         GROUP BY 1,2
+       ) sub
+
+```
+
+Assuming that works as planned (results should look exactly the same as the first query), it's time to break the results out into different columns for various years. Each item in the `SELECT` statement creates a column, so you'll have to create a separate column for each year:
+
+```sql
+SELECT conference,
+       SUM(CASE WHEN year = 'FR' THEN players ELSE NULL END) AS fr,
+       SUM(CASE WHEN year = 'SO' THEN players ELSE NULL END) AS so,
+       SUM(CASE WHEN year = 'JR' THEN players ELSE NULL END) AS jr,
+       SUM(CASE WHEN year = 'SR' THEN players ELSE NULL END) AS sr
+  FROM (
+        SELECT teams.conference AS conference,
+               players.year,
+               COUNT(1) AS players
+          FROM benn.college_football_players players
+          JOIN benn.college_football_teams teams
+            ON teams.school_name = players.school_name
+         GROUP BY 1,2
+       ) sub
+ GROUP BY 1
+ ORDER BY 1
+
+```
+
+Technically, you've now accomplished the goal of this tutorial. But this could still be made a little better. You'll notice that the above query produces a list that is ordered alphabetically by Conference. It might make more sense to add a "total players" column and order by that (largest to smallest):
+
+```sql
+SELECT conference,
+       SUM(players) AS total_players,
+       SUM(CASE WHEN year = 'FR' THEN players ELSE NULL END) AS fr,
+       SUM(CASE WHEN year = 'SO' THEN players ELSE NULL END) AS so,
+       SUM(CASE WHEN year = 'JR' THEN players ELSE NULL END) AS jr,
+       SUM(CASE WHEN year = 'SR' THEN players ELSE NULL END) AS sr
+  FROM (
+        SELECT teams.conference AS conference,
+               players.year,
+               COUNT(1) AS players
+          FROM benn.college_football_players players
+          JOIN benn.college_football_teams teams
+            ON teams.school_name = players.school_name
+         GROUP BY 1,2
+       ) sub
+ GROUP BY 1
+ ORDER BY 2 DESC
+
+```
+
+### Pivoting columns to rows
+
+A lot of data you'll find out there on the internet is formatted for consumption, not analysis. Take, for example, **this table showing the number of earthquakes worldwide from 2000-2012**:
+
+![https://mode.com/resources/images/common-problems/earthquake-table.png](https://mode.com/resources/images/common-problems/earthquake-table.png)
+
+In this format it's challenging to answer questions like "what's the average magnitude of an earthquake?" It would be much easier if the data were displayed in 3 columns: "magnitude", "year", and "number of earthquakes." Here's how to transform the data into that form:
+
+First, check out the data :
+
+```sql
+SELECT *
+  FROM tutorial.worldwide_earthquakes
+
+```
+
+The first thing to do here is to create a table that lists all of the columns from the original table as rows in a new table. Unless you have a ton of columns to transform, the easiest way is often just to list them out in a subquery:
+
+```sql
+SELECT year
+  FROM (VALUES (2000),(2001),(2002),(2003),(2004),(2005),(2006),
+               (2007),(2008),(2009),(2010),(2011),(2012)) v(year)
+
+```
+
+Once you've got this, you can cross join it with the `worldwide_earthquakes` table to create an expanded view:
+
+```sql
+SELECT years.*,
+       earthquakes.*
+  FROM tutorial.worldwide_earthquakes earthquakes
+ CROSS JOIN (
+       SELECT year
+         FROM (VALUES (2000),(2001),(2002),(2003),(2004),(2005),(2006),
+                      (2007),(2008),(2009),(2010),(2011),(2012)) v(year)
+       ) years
+
+```
+
+Notice that each row in the `worldwide_earthquakes` is replicated 13 times. The last thing to do is to fix this using a `CASE` statement that pulls data from the correct column in the `worldwide_earthquakes` table given the value in the `year` column:
+
+```sql
+SELECT years.*,
+       earthquakes.magnitude,
+       CASE year
+         WHEN 2000 THEN year_2000
+         WHEN 2001 THEN year_2001
+         WHEN 2002 THEN year_2002
+         WHEN 2003 THEN year_2003
+         WHEN 2004 THEN year_2004
+         WHEN 2005 THEN year_2005
+         WHEN 2006 THEN year_2006
+         WHEN 2007 THEN year_2007
+         WHEN 2008 THEN year_2008
+         WHEN 2009 THEN year_2009
+         WHEN 2010 THEN year_2010
+         WHEN 2011 THEN year_2011
+         WHEN 2012 THEN year_2012
+         ELSE NULL END
+         AS number_of_earthquakes
+  FROM tutorial.worldwide_earthquakes earthquakes
+ CROSS JOIN (
+       SELECT year
+         FROM (VALUES (2000),(2001),(2002),(2003),(2004),(2005),(2006),
+                      (2007),(2008),(2009),(2010),(2011),(2012)) v(year)
+       ) years
+
+```
