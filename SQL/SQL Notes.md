@@ -215,7 +215,7 @@ SELECT *
 
 ## SQL BETWEEN
 
-`BETWEEN` is a logical operator in SQL that allows you to select only rows that are within a specific range. It has to be paired with the **`[AND](https://mode.com/sql-tutorial/sql-logical-operators)`** operator. Here's what `BETWEEN` looks like:
+`BETWEEN` is a logical operator in SQL that allows you to select only rows that are within a specific range. It has to be paired with the **`AND`** operator. Here's what `BETWEEN` looks like:
 
 ```sql
 SELECT *
@@ -404,7 +404,7 @@ SELECT COUNT(date)
 
 ## SQL SUM
 
-`SUM` is a SQL Aggregate Function that totals the values in a given column. Unlike **`[COUNT](https://mode.com/sql-tutorial/sql-count)`**, you can only use `SUM` on columns containing numerical values.
+`SUM` is a SQL Aggregate Function that totals the values in a given column. Unlike **COUNT**, you can only use `SUM` on columns containing numerical values.
 
 ```sql
 SELECT SUM(volume)
@@ -461,7 +461,7 @@ SELECT year,
  GROUP BY year
 ```
 
-You can group by multiple columns, but you have to separate column names with commas—just as with **`[ORDER BY](https://mode.com/sql-tutorial/sql-order-by)`**
+You can group by multiple columns, but you have to separate column names with commas—just as with **ORDER BY**.
 
 ### Using GROUP BY with ORDER BY
 
@@ -573,7 +573,7 @@ SELECT player_name,
 
 1. The `CASE` statement always goes in the `SELECT` clause
 2. `CASE` must include the following components: `WHEN`, `THEN`, and `END`. `ELSE` is an optional component.
-3. You can make any conditional statement using any conditional operator (like **`[WHERE](https://mode.com/sql-tutorial/sql-where)`** ) between `WHEN` and `THEN`. This includes stringing together multiple conditional statements using `AND` and `OR`.
+3. You can make any conditional statement using any conditional operator (like **WHERE** ) between `WHEN` and `THEN`. This includes stringing together multiple conditional statements using `AND` and `OR`.
 4. You can include multiple `WHEN` statements, as well as an `ELSE` statement to deal with any unaddressed conditions.
 
 ### Using CASE with aggregate functions
@@ -813,7 +813,7 @@ ON teams.school_name = players.school_name
 
 Inner joins, which can be written as either `JOIN DB2` or `INNER JOIN DB2` Inner joins eliminate rows from both tables that do not satisfy the join condition set forth in the `ON` statement. In mathematical terms, an inner join is the *intersection* of the two tables.
 
-![Untitled](Images/SQL%20Notes/Untitled.png)
+![Untitled](Images/Untitled.png)
 
 ### Joining tables with identical column names
 
@@ -860,11 +860,11 @@ Outer joins are joins that return matched values **and** unmatched values from
 
 When performing an **inner join**, rows from either table that are unmatched in the other table are not returned. In an outer join, unmatched rows in one or both tables can be returned.
 
-![Untitled](Images/SQL%20Notes/Untitled%201.png)
+![Untitled](Images/Untitled%201.png)
 
 ## SQL LEFT JOIN
 
-![Untitled](Images/SQL%20Notes/Untitled%202.png)
+![Untitled](Images/Untitled%202.png)
 
 `LEFT JOIN` command tells the database to return all rows in the table in the `FROM` clause, regardless of whether or not they have matches in the table in the `LEFT JOIN` clause.
 
@@ -908,7 +908,7 @@ LEFT JOIN tutorial.crunchbase_acquisitions acquisitions
 
 Right joins are similar to left joins except they return all rows from the table in the `RIGHT JOIN` clause and only matching rows from the table in the `FROM` clause.
 
-![Untitled](Images/SQL%20Notes/Untitled%203.png)
+![Untitled](Images/Untitled%203.png)
 
 `RIGHT JOIN` is rarely used because you can achieve the results of a `RIGHT JOIN` by simply switching the two joined table names in a `LEFT JOIN`.
 
@@ -951,7 +951,7 @@ SELECT companies.permalink AS companies_permalink,
 
 What's happening above is that the conditional statement `AND...` is evaluated before the join occurs. You can think of it as a `WHERE` clause that only applies to one of the tables. You can tell that this is only happening in one of the tables because the 1000memories permalink is still displayed in the column that pulls from the other table:
 
-![Untitled](Images/SQL%20Notes/Untitled%204.png)
+![Untitled](Images/Untitled%204.png)
 
 ### Filtering in the WHERE clause
 
@@ -973,7 +973,7 @@ SELECT companies.permalink AS companies_permalink,
 
 You can see that the 1000memories line is not returned (it would have been between the two highlighted lines below). Also note that filtering in the `WHERE` clause can also filter null values, so we added an extra line to make sure to include the nulls.
 
-![Untitled](Images/SQL%20Notes/Untitled%205.png)
+![Untitled](Images/Untitled%205.png)
 
 ```sql
 -- Write a query that shows a company's name, "status" (found in the Companies table), and the number of unique investors in that company.
@@ -2730,7 +2730,7 @@ SELECT *
 
 You'll get this output. It's called the Query Plan, and it shows the order in which your query will be executed:
 
-![Untitled](Images/SQL%20Notes/Untitled%206.png)
+![Untitled](Images/Untitled%206.png)
 
 The entry at the bottom of the list is executed first. So this shows that the `WHERE` clause, which limits the date range, will be executed first. Then, the database will scan 600 rows (this is an approximate number). You can see the cost listed next to the number of rows—higher numbers mean longer run time. You should use this more as a reference than as an absolute measure. To clarify, this is most useful if you run `EXPLAIN` on a query, modify the steps that are expensive, then run `EXPLAIN` again to see if the cost is reduced. Finally, the `LIMIT` clause is executed last and is really cheap to run (24.65 vs 147.87 for the `WHERE` clause).
 
